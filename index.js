@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import { fileSelector } from 'inquirer-file-selector';
-import { createPdfFromImages } from './pdf-generator.js';
+import { createPdfFromImages } from './src/pdf-generator.js';
 
 const askForOption = () => {
     return inquirer.prompt([
