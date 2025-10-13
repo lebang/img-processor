@@ -46,11 +46,47 @@ export const createPdfFromImages = (folderPath) => {
 
         console.log(`找到了 ${imagePaths.length} 张JPG图片，正在生成PDF...`);
 
+        // Define font path and set it
+        try {
+            const fontPath = path.join(process.cwd(), 'fonts', 'SourceHanSans.otf');
+            doc.font(fontPath);
+        } catch (fontError) {
+            console.error(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
+            console.error(`!! 字体文件加载失败!`);
+            console.error(`!! 请确保您已经下载了中文字体(如“思源黑体”)并将其命名为 SourceHanSans.otf 后放置在 "fonts" 目录下。`);
+            console.error(`!! PDF中的中文将会显示为乱码。`);
+            console.error(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
+            // Fallback to default font
+            doc.font('Helvetica');
+        }
+
         for (const imagePath of imagePaths) {
             try {
                 const image = doc.openImage(imagePath);
-                doc.addPage({ size: [image.width, image.height] });
-                doc.image(image, 0, 0, { width: image.width, height: image.height });
+                const dirName = path.basename(path.dirname(imagePath));
+
+                // Dynamically calculate font size and text area height
+                const FONT_SIZE_RATIO = 10; // Smaller number -> larger font
+                const fontSize = Math.max(16, Math.min(120, Math.floor(image.width / FONT_SIZE_RATIO)));
+                const textHeight = fontSize * 1.5; // Approximate height for the text area
+                const margin = 40;
+
+                // Add a page with margins and dynamic text height
+                doc.addPage({
+                    size: [image.width + margin * 2, image.height + margin * 2 + textHeight],
+                });
+
+                // Draw directory name with dynamic font size
+                doc.fontSize(fontSize).text(dirName, margin, margin, {
+                    align: 'center',
+                    width: image.width,
+                });
+
+                // Draw image below the text
+                doc.image(image, margin, margin + textHeight, {
+                    width: image.width,
+                    height: image.height,
+                });
             } catch (e) {
                 console.error(`处理图片 ${path.basename(imagePath)} 时出错:`, e.message);
             }
