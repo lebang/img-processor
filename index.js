@@ -26,6 +26,7 @@ const askForFolder = () => {
         message: '请选择目录（回车确认）：',
         root: process.cwd(),
         selectionType: 'folder',
+        // type: 'directory',
     });
 };
 
