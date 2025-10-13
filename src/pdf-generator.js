@@ -1,6 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
+
+const compressImage = (imagePath) => {
+    console.log(`正在压缩图片: ${path.basename(imagePath)}`);
+    return sharp(imagePath)
+        .jpeg({ quality: 75, progressive: true })
+        .toBuffer();
+};
 
 const getAllJpgs = (dirPath) => {
     let jpgFiles = [];
@@ -28,8 +36,16 @@ const getAllJpgs = (dirPath) => {
     return jpgFiles;
 };
 
+const getTextSize = (image) => {
+  const FONT_SIZE_RATIO = 10; // Smaller number -> larger font
+  const fontSize = Math.max(16, Math.min(120, Math.floor(image.width / FONT_SIZE_RATIO)));
+  const textHeight = fontSize * 1.5; // Approximate height for the text area
+  const margin = 40;
+  return { fontSize, textHeight, margin };
+};
+
 export const createPdfFromImages = (folderPath) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const doc = new PDFDocument({ autoFirstPage: false });
         const pdfName = `${path.basename(folderPath)}.pdf`;
         const pdfPath = path.join(folderPath, pdfName);
@@ -62,14 +78,12 @@ export const createPdfFromImages = (folderPath) => {
 
         for (const imagePath of imagePaths) {
             try {
-                const image = doc.openImage(imagePath);
+                const compressedBuffer = await compressImage(imagePath);
+                const image = doc.openImage(compressedBuffer);
+                // const image = doc.openImage(imagePath);
                 const dirName = path.basename(path.dirname(imagePath));
 
-                // Dynamically calculate font size and text area height
-                const FONT_SIZE_RATIO = 10; // Smaller number -> larger font
-                const fontSize = Math.max(16, Math.min(120, Math.floor(image.width / FONT_SIZE_RATIO)));
-                const textHeight = fontSize * 1.5; // Approximate height for the text area
-                const margin = 40;
+                const { fontSize, textHeight, margin } = getTextSize(image);
 
                 // Add a page with margins and dynamic text height
                 doc.addPage({
