@@ -1,5 +1,6 @@
 import inquirer from 'inquirer';
 import { fileSelector } from 'inquirer-file-selector';
+import { createPdfFromImages } from './pdf-generator.js';
 
 const askForOption = () => {
     return inquirer.prompt([
@@ -26,7 +27,6 @@ const askForFolder = () => {
         message: '请选择目录（回车确认）：',
         root: process.cwd(),
         selectionType: 'folder',
-        // type: 'directory',
     });
 };
 
@@ -42,6 +42,7 @@ async function main() {
     try {
         const optionAnswer = await askForOption();
         
+        console.log('请选择包含JPG图片的源目录...');
         let folderAnswer;
         do {
             folderAnswer = await askForFolder();
@@ -50,7 +51,13 @@ async function main() {
             }
         } while (!folderAnswer.isDirectory);
 
-        console.log(`选择的操作是： ${optionAnswer.option}，选择的目录是： ${folderAnswer.path}`);
+        if (optionAnswer.option === 'pdf') {
+            console.log('正在生成 PDF，请稍候...');
+            await createPdfFromImages(folderAnswer.path);
+        } else if (optionAnswer.option === 'prod') {
+            console.log('生成最终客户文件夹的功能尚未实现。');
+        }
+
     } catch (error) {
       handleErrors(error);
     }
