@@ -59,7 +59,6 @@ export const createPdfFromImages = (folderPath) => {
             console.log('在选定目录及其子目录中未找到 JPG 图片。');
             return resolve();
         }
-
         console.log(`找到了 ${imagePaths.length} 张JPG图片，正在生成PDF...`);
 
         // Define font path and set it
