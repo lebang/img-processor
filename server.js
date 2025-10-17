@@ -1,104 +1,24 @@
+
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { URLSearchParams } from 'url';
 import { createPdfFromImages } from './src/pdf-generator.js';
 
+const PORT = 3000;
+const PUBLIC_DIR = path.join(process.cwd(), 'public');
+
+const MIME_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json',
+    '.ico': 'image/x-icon',
+};
+
 const server = http.createServer((req, res) => {
-    // Serve static CSS file
-    if (req.url === '/style.css') {
-        const cssPath = path.join(process.cwd(), 'public', 'style.css');
-        fs.readFile(cssPath, (err, data) => {
-            if (err) {
-                res.writeHead(404);
-                res.end('CSS file not found');
-                return;
-            }
-            res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-            res.end(data);
-        });
-    } 
-    // Serve main HTML page
-    else if (req.method === 'GET' && req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(`
-            <!DOCTYPE html>
-            <html lang="zh-CN">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>图片处理器</title>
-                <link rel="stylesheet" href="/style.css">
-            </head>
-            <body>
-                <div class="container">
-                    <h1>PDF 生成器</h1>
-                    <p>请在下方输入包含JPG图片的完整文件夹路径，然后点击生成。</p>
-                    <form id="pdf-form">
-                        <input type="text" name="folderPath" placeholder="例如: /Users/bangle/lebang/img-processor/test/A.幸福  大框1个 （1张横图）100x60" value="/Users/bangle/lebang/img-processor/test" required>
-                        <button type="submit">
-                            <span class="spinner"></span>
-                            生成PDF
-                        </button>
-                    </form>
-                    <div id="response-message" class="message"></div>
-                </div>
-
-                <script>
-                    const form = document.getElementById('pdf-form');
-                    const input = form.querySelector('input');
-                    const button = form.querySelector('button');
-                    const responseDiv = document.getElementById('response-message');
-
-                    form.addEventListener('submit', async (event) => {
-                        event.preventDefault();
-                        
-                        const formData = new FormData(form);
-                        const folderPath = formData.get('folderPath');
-
-                        // Reset state
-                        input.disabled = true;
-                        button.classList.add('loading');
-                        button.disabled = true;
-                        responseDiv.style.display = 'none';
-                        responseDiv.textContent = '';
-
-                        try {
-                            const response = await fetch('/run', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: new URLSearchParams({ folderPath })
-                            });
-
-                            const result = await response.json();
-
-                            responseDiv.textContent = result.message;
-                            if (result.success) {
-                                responseDiv.className = 'message success';
-                            } else {
-                                responseDiv.className = 'message error';
-                            }
-                            responseDiv.style.display = 'block';
-
-                        } catch (error) {
-                            responseDiv.textContent = '发生意外错误，请检查终端日志。';
-                            responseDiv.className = 'message error';
-                            responseDiv.style.display = 'block';
-                        } finally {
-                            input.disabled = false;
-                            button.classList.remove('loading');
-                            button.disabled = false;
-                        }
-                    });
-                </script>
-            </body>
-            </html>
-        `);
-    } 
-    // Handle form submission
-    else if (req.method === 'POST' && req.url === '/run') {
+    // Handle API endpoint for PDF generation
+    if (req.method === 'POST' && req.url === '/run') {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
@@ -109,7 +29,6 @@ const server = http.createServer((req, res) => {
 
             if (folderPath && fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
                 console.log(`收到请求，开始为目录 "${folderPath}" 生成PDF...`);
-                
                 createPdfFromImages(folderPath)
                     .then(() => {
                         console.log(`PDF生成任务完成: ${folderPath}`);
@@ -126,15 +45,40 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ success: false, message: '❌ 错误！提供的路径无效或不是一个目录，请检查后重试。' }));
             }
         });
-    } 
-    // Handle 404
-    else {
-        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('404 未找到');
+        return; // End execution for API requests
     }
+
+    // Handle static file serving for GET requests
+    if (req.method === 'GET') {
+        let urlPath = req.url === '/' ? '/index.html' : req.url;
+        const filePath = path.join(PUBLIC_DIR, urlPath);
+
+        // Security check: Ensure the path is within the public directory
+        if (!filePath.startsWith(PUBLIC_DIR)) {
+            res.writeHead(403, { 'Content-Type': 'text/plain' });
+            res.end('Forbidden');
+            return;
+        }
+
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('404 Not Found');
+            } else {
+                const ext = path.extname(filePath);
+                const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(data);
+            }
+        });
+        return;
+    }
+
+    // Default 404 for other methods
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('404 Not Found');
 });
 
-const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`服务器正在运行，请打开浏览器访问 http://localhost:${PORT}`);
 });
