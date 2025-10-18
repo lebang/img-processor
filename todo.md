@@ -10,3 +10,6 @@ npm config set registry https://registry.npmmirror.com
 
 pnpm 指定阿里源：
 pnpm config set registry https://registry.npmmirror.com
+
+
+/Users/bangle/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.lebang.img_processor.json

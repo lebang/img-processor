@@ -29,7 +29,9 @@ try:
         # Use Tkinter to open a directory selection dialog
         root = tk.Tk()
         root.withdraw()  # Hide the main window
+        root.wm_attributes('-topmost', 1) # Make the window stay on top
         directory_path = filedialog.askdirectory()
+        # root.destroy() # Clean up the root window
         
         if directory_path:
             send_message({"path": directory_path})
@@ -41,4 +43,3 @@ except Exception as e:
     # It's a good practice to log errors, but for native messaging,
     # sending a message back is one way to debug.
     send_message({"error": str(e)})
-
