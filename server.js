@@ -3,7 +3,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { URLSearchParams } from 'url';
-import { createPdfFromImages } from './src/pdf-generator.js';
+import { createPdfFromImages } from './src/pdf-generator-jimp.js';
 
 import { fileURLToPath } from 'url';
 
