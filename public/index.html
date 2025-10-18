@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="container">
+        <div id="response-message" class="message"></div>
         <h1>PDF 生成器</h1>
         <p>请在下方输入包含JPG图片的完整文件夹路径，然后点击生成。</p>
         <form id="pdf-form">
@@ -17,7 +18,14 @@
                 生成PDF
             </button>
         </form>
-        <div id="response-message" class="message"></div>
+
+
+        <form id="prod-form" style="margin-top: 10px;">
+            <button type="submit">
+                <span class="spinner"></span>
+                生成生产文件夹
+            </button>
+        </form>
     </div>
 
     <script>
@@ -66,6 +74,52 @@
                 input.disabled = false;
                 button.classList.remove('loading');
                 button.disabled = false;
+            }
+        });
+        const prodForm = document.getElementById('prod-form');
+        const prodButton = prodForm.querySelector('button');
+
+        prodForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const folderPath = form.querySelector('input[name="folderPath"]').value;
+
+            // Reset state
+            input.disabled = true;
+            button.disabled = true;
+            prodButton.classList.add('loading');
+            prodButton.disabled = true;
+            responseDiv.style.display = 'none';
+            responseDiv.textContent = '';
+
+            try {
+                const response = await fetch('/prod-folder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ folderPath })
+                });
+
+                const result = await response.json();
+
+                responseDiv.textContent = result.message;
+                if (result.success) {
+                    responseDiv.className = 'message success';
+                } else {
+                    responseDiv.className = 'message error';
+                }
+                responseDiv.style.display = 'block';
+
+            } catch (error) {
+                responseDiv.textContent = '发生意外错误，请检查终端日志。';
+                responseDiv.className = 'message error';
+                responseDiv.style.display = 'block';
+            } finally {
+                input.disabled = false;
+                button.disabled = false;
+                prodButton.classList.remove('loading');
+                prodButton.disabled = false;
             }
         });
     </script>

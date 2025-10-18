@@ -4,6 +4,8 @@ import path from 'path';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 
+import { decompress } from 'woff2-encoder';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -66,18 +68,15 @@ export const createPdfFromImages = (folderPath) => {
         console.log(`找到了 ${imagePaths.length} 张JPG图片，正在生成PDF...`);
 
         // Define font path and set it
-        try {
-            const fontPath = path.join(__dirname, 'fonts', 'SourceHanSans.otf');
-            doc.font(fontPath);
-        } catch (fontError) {
-            console.error(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
-            console.error(`!! 字体文件加载失败!`);
-            console.error(`!! 请确保您已经下载了中文字体(如“思源黑体”)并将其命名为 SourceHanSans.otf 后放置在 "fonts" 目录下。`);
-            console.error(`!! PDF中的中文将会显示为乱码。`);
-            console.error(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
-            // Fallback to default font
-            doc.font('Helvetica');
+        const fontPath = path.join(__dirname, 'fonts', 'SourceHanSans.woff2');
+        if (!fs.existsSync(fontPath)) {
+            const fontError = new Error('字体文件 SourceHanSans.woff2 未找到，请检查 /src/fonts 目录。');
+            console.error(fontError.message);
+            return reject(fontError);
         }
+        const fontBuffer = fs.readFileSync(fontPath);
+        const decompressedFont = await decompress(fontBuffer);
+        doc.font(decompressedFont);
 
         for (const imagePath of imagePaths) {
             try {

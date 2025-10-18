@@ -1,6 +1,7 @@
 import inquirer from 'inquirer';
 import { fileSelector } from 'inquirer-file-selector';
 import { createPdfFromImages } from './src/pdf-generator.js';
+import { createProductionFolder } from './src/prod-folder-generator.js';
 
 const askForOption = () => {
     return inquirer.prompt([
@@ -55,7 +56,8 @@ async function main() {
             console.log('正在生成 PDF，请稍候...');
             await createPdfFromImages(folderAnswer.path);
         } else if (optionAnswer.option === 'prod') {
-            console.log('生成最终客户文件夹的功能尚未实现。');
+            console.log('正在生成生产文件夹，请稍候...');
+            createProductionFolder(folderAnswer.path);
         }
 
     } catch (error) {

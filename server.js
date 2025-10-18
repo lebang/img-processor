@@ -3,7 +3,8 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { URLSearchParams } from 'url';
-import { createPdfFromImages } from './src/pdf-generator-jimp.js';
+import { createPdfFromImages } from './src/pdf-generator.js';
+import { createProductionFolder } from './src/prod-folder-generator.js';
 
 import { fileURLToPath } from 'url';
 
@@ -42,8 +43,44 @@ const server = http.createServer((req, res) => {
                     .catch(err => {
                         console.error(`PDF生成任务失败: ${folderPath}`, err);
                         res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, message: '❌ PDF 生成失败！请检查终端窗口中的错误日志。' }));
+                        res.end(JSON.stringify({ success: false, message: `❌ PDF 生成失败！${err.message}` }));
                     });
+            } else {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '❌ 错误！提供的路径无效或不是一个目录，请检查后重试。' }));
+            }
+        });
+        return; // End execution for API requests
+    }
+
+    // Handle API endpoint for production folder generation
+    if (req.method === 'POST' && req.url === '/prod-folder') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            const params = new URLSearchParams(body);
+            const folderPath = params.get('folderPath');
+
+            if (folderPath && fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+                console.log(`收到请求，开始为目录 "${folderPath}" 生成生产文件夹...`);
+                try {
+                    const result = createProductionFolder(folderPath);
+                    if (result.success) {
+                        console.log(`生产文件夹生成任务完成: ${folderPath}`);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: result.message }));
+                    } else {
+                        console.log(`生产文件夹生成任务失败: ${folderPath}, ${result.message}`);
+                        res.writeHead(409, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, message: result.message }));
+                    }
+                } catch (err) {
+                    console.error(`生产文件夹生成任务失败: ${folderPath}`, err);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: `❌ 生产文件夹生成失败！${err.message}` }));
+                }
             } else {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: '❌ 错误！提供的路径无效或不是一个目录，请检查后重试。' }));

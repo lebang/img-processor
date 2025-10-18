@@ -13,7 +13,7 @@
   "pkg": {
     "assets": [
       "public/**/*",
-      "src/fonts/SourceHanSans.otf"
+      "src/fonts/SourceHanSans.woff2"
     ]
   },
   "keywords": [],
@@ -24,7 +24,9 @@
     "inquirer": "^12.9.6",
     "inquirer-file-selector": "^1.0.1",
     "jimp": "^1.6.0",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "sharp": "^0.33.4",
+    "woff2-encoder": "^2.0.0"
   },
   "devDependencies": {
     "pkg": "^5.8.1"
