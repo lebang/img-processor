@@ -9,12 +9,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.path) {
     pathDisplay.textContent = `选择的路径: ${message.path}`;
 
-    // Send the path to the content script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "set_path", path: message.path });
-      }
-    });
+    // Find the iframe and reload it with the new path as a query parameter
+    const iframe = document.querySelector('iframe');
+    if (iframe) {
+      const newUrl = `http://localhost:3000?folderPath=${encodeURIComponent(message.path)}`;
+      iframe.src = newUrl;
+    }
 
   } else if (message.error) {
     pathDisplay.textContent = `错误: ${message.error}`;

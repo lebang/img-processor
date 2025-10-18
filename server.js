@@ -91,7 +91,9 @@ const server = http.createServer((req, res) => {
 
     // Handle static file serving for GET requests
     if (req.method === 'GET') {
-        let urlPath = req.url === '/' ? '/index.html' : req.url;
+        // Parse the URL and ignore the query string for file serving
+        const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+        let urlPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
         const filePath = path.join(PUBLIC_DIR, urlPath);
 
         // Security check: Ensure the path is within the public directory

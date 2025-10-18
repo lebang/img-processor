@@ -29,6 +29,17 @@
     </div>
 
     <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const folderPath = urlParams.get('folderPath');
+            if (folderPath) {
+                const inputElement = document.querySelector('input[name="folderPath"]');
+                if (inputElement) {
+                    inputElement.value = decodeURIComponent(folderPath);
+                }
+            }
+        });
+
         const form = document.getElementById('pdf-form');
         const input = form.querySelector('input');
         const button = form.querySelector('button');
