@@ -1,7 +1,11 @@
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const compressImage = (imagePath) => {
     console.log(`正在压缩图片: ${path.basename(imagePath)}`);
@@ -63,7 +67,7 @@ export const createPdfFromImages = (folderPath) => {
 
         // Define font path and set it
         try {
-            const fontPath = path.join(process.cwd(), 'fonts', 'SourceHanSans.otf');
+            const fontPath = path.join(__dirname, 'fonts', 'SourceHanSans.otf');
             doc.font(fontPath);
         } catch (fontError) {
             console.error(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`);
