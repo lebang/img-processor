@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Directory Picker",
+  "version": "1.0",
+  "description": "Select a local directory and list its files.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "nativeMessaging",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

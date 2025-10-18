@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Directory Picker</title>
+  <style>
+    body { font-family: sans-serif; width: 300px; padding: 10px; }
+    h1 { font-size: 16px; }
+    button { padding: 8px 12px; font-size: 14px; cursor: pointer; }
+    #path-display { 
+      margin-top: 15px; 
+      font-size: 12px; 
+      word-wrap: break-word; 
+      background-color: #f0f0f0;
+      padding: 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>获取绝对路径</h1>
+  <button id="select-dir-btn">选择目录</button>
+  <div id="path-display">尚未选择目录...</div>
+  <script src="popup.js"></script>
+</body>
+</html>

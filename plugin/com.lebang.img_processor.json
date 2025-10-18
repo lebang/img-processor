@@ -1,0 +1,9 @@
+{
+    "name": "com.lebang.img_processor",
+    "description": "A native host for selecting directories.",
+    "path": "/Users/bangle/lebang/img-processor/plugin/native_host.py",
+    "type": "stdio",
+    "allowed_origins": [
+        "chrome-extension://gieamjkfnnjonhebjmholbcmlibogogd/"
+    ]
+}
