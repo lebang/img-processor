@@ -3,6 +3,7 @@ node_modules
 release
 /test
 dist
+dist-electron
 
 # Logs
 logs
