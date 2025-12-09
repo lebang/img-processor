@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron'
-import { loadImagesFromFolder } from '../services/imageService.js'
+import { scanImagesFromFolder, loadThumbnailsInBatches, loadImagesFromFolder } from '../services/imageService.js'
 import { generatePdf } from '../services/pdfService.js'
 
 // 存储主窗口引用
@@ -30,7 +30,63 @@ export function registerIpcHandlers() {
     return 'pong'
   })
 
-  // 选择图片目录
+  // 【新】仅选择目录（不扫描图片）
+  ipcMain.handle('select-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindowRef, {
+      properties: ['openDirectory'],
+      title: '选择图片目录'
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { canceled: true, folderPath: null }
+    }
+
+    return {
+      canceled: false,
+      folderPath: result.filePaths[0]
+    }
+  })
+
+  // 【新】加载图片（快速扫描 + 分批返回缩略图）
+  ipcMain.handle('load-images', async (event, { folderPath }) => {
+    try {
+      // 第一步：快速扫描目录，返回图片列表（无缩略图）
+      const images = await scanImagesFromFolder(folderPath)
+
+      if (images.length === 0) {
+        return { success: true, images: [], total: 0 }
+      }
+
+      // 立即返回图片列表（无缩略图），让前端先显示
+      mainWindowRef?.webContents.send('images-scanned', {
+        images,
+        total: images.length
+      })
+
+      // 第二步：分批生成缩略图，边生成边返回
+      loadThumbnailsInBatches(
+        images,
+        // 每批完成回调
+        (batchImages, progress) => {
+          mainWindowRef?.webContents.send('thumbnails-batch', {
+            images: batchImages,
+            progress
+          })
+        },
+        // 全部完成回调
+        () => {
+          mainWindowRef?.webContents.send('thumbnails-complete')
+        }
+      )
+
+      return { success: true, total: images.length }
+    } catch (error) {
+      console.error('加载图片失败:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 【保留兼容】选择图片目录（原方法，一次性返回）
   ipcMain.handle('select-image-folder', async () => {
     const result = await dialog.showOpenDialog(mainWindowRef, {
       properties: ['openDirectory'],

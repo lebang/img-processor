@@ -5,6 +5,9 @@ import sharp from 'sharp'
 // 支持的图片格式
 export const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
 
+// 缩略图批次大小
+const THUMBNAIL_BATCH_SIZE = 10
+
 /**
  * 生成图片缩略图（base64格式）
  * @param {string} imagePath - 图片路径
@@ -75,7 +78,64 @@ export async function getAllImages(dir, baseDir = dir) {
 }
 
 /**
- * 选择并加载图片目录
+ * 快速扫描目录，只返回图片列表（不生成缩略图）
+ * @param {string} folderPath - 目录路径
+ * @returns {Promise<Array>} 图片列表（无缩略图，使用占位符）
+ */
+export async function scanImagesFromFolder(folderPath) {
+  // 递归遍历目录下的所有图片文件
+  const images = await getAllImages(folderPath)
+  
+  // 按相对路径排序（自然排序，支持数字序号）
+  images.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }))
+
+  // 返回带占位缩略图的图片列表
+  return images.map((image, index) => ({
+    ...image,
+    id: index, // 添加唯一 ID，用于后续更新
+    thumbnail: null // 占位，稍后分批加载
+  }))
+}
+
+/**
+ * 分批生成缩略图并通过回调返回
+ * @param {Array} images - 图片列表
+ * @param {Function} onBatchComplete - 每批完成的回调 (batchImages, progress)
+ * @param {Function} onAllComplete - 全部完成的回调
+ */
+export async function loadThumbnailsInBatches(images, onBatchComplete, onAllComplete) {
+  const total = images.length
+  let processed = 0
+
+  // 分批处理
+  for (let i = 0; i < total; i += THUMBNAIL_BATCH_SIZE) {
+    const batch = images.slice(i, i + THUMBNAIL_BATCH_SIZE)
+    
+    // 并行生成这一批的缩略图
+    const batchResults = await Promise.all(
+      batch.map(async (image) => {
+        const thumbnail = await generateThumbnail(image.path)
+        return { ...image, thumbnail }
+      })
+    )
+
+    processed += batch.length
+    const progress = Math.round((processed / total) * 100)
+
+    // 回调返回这一批的结果
+    if (onBatchComplete) {
+      onBatchComplete(batchResults, { processed, total, progress })
+    }
+  }
+
+  // 全部完成
+  if (onAllComplete) {
+    onAllComplete()
+  }
+}
+
+/**
+ * 选择并加载图片目录（原方法，保留兼容）
  * @param {string} folderPath - 目录路径
  * @returns {Promise<Array>} 包含缩略图的图片列表
  */

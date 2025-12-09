@@ -33,12 +33,11 @@
                 :loading="isLoading"
               >
                 <el-icon v-if="!isLoading"><FolderOpened /></el-icon>
-                {{ isLoading ? '正在加载图片...' : '选择图片目录' }}
+                {{ loadingButtonText }}
               </el-button>
               
               <div v-if="selectedFolder" class="folder-info">
                 <el-tag type="info" effect="plain">
-                  <!-- <el-icon><Folder /></el-icon> -->
                   {{ selectedFolder }}
                 </el-tag>
                 <el-tag type="success" effect="plain">
@@ -46,25 +45,8 @@
                 </el-tag>
               </div>
             </div>
-            
-            <!-- 图片预览区域（可拖拽排序） -->
-            <div 
-              v-loading="isLoading"
-              element-loading-text="正在扫描目录并加载图片，请稍候..."
-              element-loading-background="rgba(255, 255, 255, 0.9)"
-              class="image-preview-wrapper"
-            >
-              <ImagePreview 
-                v-if="images.length > 0" 
-                :images="images"
-                @update:images="handleImagesUpdate"
-                @order-changed="onImageOrderChanged"
-              />
-              <!-- 占位区域，确保 loading 有显示空间 -->
-              <div v-if="isLoading && images.length === 0" class="loading-placeholder"></div>
-            </div>
-            
-            <!-- 选项设置 -->
+
+                       <!-- 选项设置 -->
             <div v-if="images.length > 0" class="pdf-options">
               <el-divider content-position="left">
                 <el-icon><Setting /></el-icon> 生成选项
@@ -106,6 +88,33 @@
               {{ isGenerating ? '正在生成...' : '生成 PDF' }}
             </el-button>
             
+            <!-- 加载进度条 -->
+            <div v-if="isLoading && loadingProgress.total > 0" class="thumbnail-progress">
+              <el-progress 
+                :percentage="loadingProgress.progress" 
+                :stroke-width="16"
+                :format="() => `${loadingProgress.processed}/${loadingProgress.total}`"
+              />
+              <p class="progress-text">正在生成缩略图...</p>
+            </div>
+
+            <!-- 图片预览区域（可拖拽排序） -->
+            <div 
+              v-loading="isLoading && images.length === 0"
+              element-loading-text="正在扫描目录..."
+              element-loading-background="rgba(255, 255, 255, 0.9)"
+              class="image-preview-wrapper"
+            >
+              <ImagePreview 
+                v-if="images.length > 0" 
+                :images="images"
+                @update:images="handleImagesUpdate"
+                @order-changed="onImageOrderChanged"
+              />
+              <!-- 占位区域，确保 loading 有显示空间 -->
+              <div v-if="isLoading && images.length === 0" class="loading-placeholder"></div>
+            </div>
+            
             <!-- 提示信息 -->
             <el-alert
               v-if="!isElectronReady"
@@ -143,10 +152,19 @@ const {
   selectedFolder, 
   images, 
   isLoading, 
+  loadingProgress,
   selectImageFolder, 
   updateImages,
   onImageOrderChanged 
 } = useImageFolder()
+
+// 加载按钮文案
+import { computed } from 'vue'
+const loadingButtonText = computed(() => {
+  if (!isLoading.value) return '选择图片目录'
+  if (loadingProgress.value.total === 0) return '正在扫描目录...'
+  return `正在加载缩略图 ${loadingProgress.value.progress}%`
+})
 
 const { 
   isGenerating, 
@@ -268,6 +286,12 @@ html, body, #app {
   color: #909399;
   margin-top: 8px;
   font-size: 14px;
+}
+
+/* 缩略图加载进度 */
+.thumbnail-progress {
+  width: 100%;
+  padding: 12px 0;
 }
 
 /* 图片预览容器 */

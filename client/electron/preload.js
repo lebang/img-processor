@@ -8,7 +8,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 平台信息
   platform: process.platform,
   
-  // 选择图片目录
+  // 【新】仅选择目录
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
+  
+  // 【新】加载图片（分批返回）
+  loadImages: (folderPath) => ipcRenderer.invoke('load-images', { folderPath }),
+  
+  // 【新】监听图片扫描完成（立即返回图片列表，无缩略图）
+  onImagesScanned: (callback) => {
+    ipcRenderer.on('images-scanned', (event, data) => callback(data))
+  },
+  
+  // 【新】监听缩略图批次完成
+  onThumbnailsBatch: (callback) => {
+    ipcRenderer.on('thumbnails-batch', (event, data) => callback(data))
+  },
+  
+  // 【新】监听缩略图全部完成
+  onThumbnailsComplete: (callback) => {
+    ipcRenderer.on('thumbnails-complete', () => callback())
+  },
+  
+  // 【新】移除图片加载相关监听
+  removeImageListeners: () => {
+    ipcRenderer.removeAllListeners('images-scanned')
+    ipcRenderer.removeAllListeners('thumbnails-batch')
+    ipcRenderer.removeAllListeners('thumbnails-complete')
+  },
+  
+  // 【保留兼容】选择图片目录（一次性返回）
   selectImageFolder: () => ipcRenderer.invoke('select-image-folder'),
   
   // 生成 PDF
