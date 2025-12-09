@@ -22,5 +22,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 移除 PDF 进度监听
   removePdfProgressListener: () => {
     ipcRenderer.removeAllListeners('pdf-progress')
+  },
+
+  // 监听菜单事件 - 打开文件夹
+  onMenuOpenFolder: (callback) => {
+    ipcRenderer.on('menu-open-folder', () => callback())
+  },
+
+  // 监听菜单事件 - 导出 PDF
+  onMenuExportPdf: (callback) => {
+    ipcRenderer.on('menu-export-pdf', () => callback())
+  },
+
+  // 移除菜单事件监听
+  removeMenuListeners: () => {
+    ipcRenderer.removeAllListeners('menu-open-folder')
+    ipcRenderer.removeAllListeners('menu-export-pdf')
   }
 })

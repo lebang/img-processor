@@ -8,7 +8,6 @@
         </div>
         <div class="status-bar">
           <el-tag :type="isElectronReady ? 'success' : 'warning'" effect="dark">
-            <el-icon><Monitor /></el-icon>
             {{ isElectronReady ? `Electron 已就绪 (${platform})` : 'Web 模式' }}
           </el-tag>
         </div>
@@ -30,10 +29,11 @@
                 type="primary" 
                 size="large" 
                 @click="selectImageFolder"
-                :disabled="!isElectronReady || isGenerating"
+                :disabled="!isElectronReady || isGenerating || isLoading"
+                :loading="isLoading"
               >
-                <el-icon><FolderOpened /></el-icon>
-                选择图片目录
+                <el-icon v-if="!isLoading"><FolderOpened /></el-icon>
+                {{ isLoading ? '正在加载图片...' : '选择图片目录' }}
               </el-button>
               
               <div v-if="selectedFolder" class="folder-info">
@@ -48,12 +48,21 @@
             </div>
             
             <!-- 图片预览区域（可拖拽排序） -->
-            <ImagePreview 
-              v-if="images.length > 0" 
-              :images="images"
-              @update:images="images = $event"
-              @order-changed="onImageOrderChanged"
-            />
+            <div 
+              v-loading="isLoading"
+              element-loading-text="正在扫描目录并加载图片，请稍候..."
+              element-loading-background="rgba(255, 255, 255, 0.9)"
+              class="image-preview-wrapper"
+            >
+              <ImagePreview 
+                v-if="images.length > 0" 
+                :images="images"
+                @update:images="handleImagesUpdate"
+                @order-changed="onImageOrderChanged"
+              />
+              <!-- 占位区域，确保 loading 有显示空间 -->
+              <div v-if="isLoading && images.length === 0" class="loading-placeholder"></div>
+            </div>
             
             <!-- 选项设置 -->
             <div v-if="images.length > 0" class="pdf-options">
@@ -88,7 +97,7 @@
               v-if="images.length > 0"
               type="success"
               size="large"
-              @click="generatePdf"
+              @click="handleGeneratePdf"
               :loading="isGenerating"
               :disabled="!isElectronReady"
               style="width: 100%"
@@ -119,152 +128,49 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
 import ImagePreview from './components/ImagePreview.vue'
 
-// 状态
-const isElectronReady = ref(false)
-const platform = ref('')
-const selectedFolder = ref('')
-const images = ref([])
-const isGenerating = ref(false)
-const progress = reactive({
-  current: 0,
-  total: 0,
-  percent: 0
+// 引入 Hooks
+import { useElectron } from '@/hooks/useElectron'
+import { useImageFolder } from '@/hooks/useImageFolder'
+import { usePdfGenerator } from '@/hooks/usePdfGenerator'
+import { useMenuEvents } from '@/hooks/useMenuEvents'
+
+// 使用 Hooks
+const { isElectronReady, platform } = useElectron()
+
+const { 
+  selectedFolder, 
+  images, 
+  isLoading, 
+  selectImageFolder, 
+  updateImages,
+  onImageOrderChanged 
+} = useImageFolder()
+
+const { 
+  isGenerating, 
+  pdfOptions, 
+  progress, 
+  progressFormat, 
+  generatePdf 
+} = usePdfGenerator()
+
+// 设置菜单事件（需要传入回调）
+useMenuEvents({
+  onOpenFolder: selectImageFolder,
+  onExportPdf: () => generatePdf(images.value),
+  getImages: () => images.value
 })
 
-// PDF 选项
-const pdfOptions = reactive({
-  fitToImage: false,  // false = A4 尺寸, true = 按图片原始尺寸
-  pageSize: 'A4'
-})
-
-
-
-// 生命周期
-onMounted(() => {
-  checkElectron()
-  setupProgressListener()
-})
-
-onUnmounted(() => {
-  if (window.electronAPI?.removePdfProgressListener) {
-    window.electronAPI.removePdfProgressListener()
-  }
-})
-
-// 方法
-function checkElectron() {
-  if (window.electronAPI) {
-    isElectronReady.value = true
-    platform.value = window.electronAPI.platform
-  }
+// 处理图片更新
+function handleImagesUpdate(newImages) {
+  updateImages(newImages)
 }
 
-function setupProgressListener() {
-  if (window.electronAPI?.onPdfProgress) {
-    window.electronAPI.onPdfProgress((data) => {
-      progress.current = data.current
-      progress.total = data.total
-      progress.percent = data.percent
-    })
-  }
-}
-
-function progressFormat(percent) {
-  return `${percent}%`
-}
-
-// 选择图片目录
-async function selectImageFolder() {
-  if (!window.electronAPI) {
-    ElMessage.warning('Electron API 不可用')
-    return
-  }
-  
-  try {
-    const result = await window.electronAPI.selectImageFolder()
-    
-    if (result.canceled) {
-      return
-    }
-    
-    if (result.error) {
-      ElMessage.error(`读取目录失败: ${result.error}`)
-      return
-    }
-    
-    if (result.images.length === 0) {
-      ElMessage.warning('所选目录中没有找到支持的图片文件')
-      return
-    }
-    
-    selectedFolder.value = result.folderPath
-    images.value = result.images
-    
-    ElMessage.success(`成功加载 ${result.images.length} 张图片`)
-  } catch (error) {
-    ElMessage.error(`选择目录失败: ${error.message}`)
-  }
-}
-
-// 图片顺序变化
-function onImageOrderChanged(newImages) {
-  console.log('图片顺序已更新', newImages.map(img => img.name))
-}
-
-// 生成 PDF
-async function generatePdf() {
-  if (!window.electronAPI) {
-    ElMessage.warning('Electron API 不可用')
-    return
-  }
-  
-  if (images.value.length === 0) {
-    ElMessage.warning('请先选择图片目录')
-    return
-  }
-  
-  isGenerating.value = true
-  progress.current = 0
-  progress.total = images.value.length
-  progress.percent = 0
-  
-  try {
-    // 将 Vue 响应式数组转换为普通数组，避免 IPC 序列化失败
-    const plainImages = images.value.map(img => ({
-      name: img.name,
-      path: img.path,
-      relativePath: img.relativePath
-    }))
-    
-    const result = await window.electronAPI.generatePdf(plainImages, {
-      fitToImage: pdfOptions.fitToImage,
-      pageSize: pdfOptions.pageSize
-    })
-    
-    if (result.canceled) {
-      ElMessage.info('已取消保存')
-      return
-    }
-    
-    if (result.success) {
-      ElNotification({
-        title: 'PDF 生成成功',
-        message: `已保存到: ${result.outputPath}`,
-        type: 'success',
-        duration: 5000
-      })
-    } else {
-      ElMessage.error(`生成失败: ${result.error}`)
-    }
-  } catch (error) {
-    ElMessage.error(`生成 PDF 失败: ${error.message}`)
-  } finally {
-    isGenerating.value = false
-  }
+// 处理生成 PDF
+function handleGeneratePdf() {
+  generatePdf(images.value)
 }
 </script>
 
@@ -362,6 +268,20 @@ html, body, #app {
   color: #909399;
   margin-top: 8px;
   font-size: 14px;
+}
+
+/* 图片预览容器 */
+.image-preview-wrapper {
+  width: 100%;
+  min-height: 50px;
+}
+
+.loading-placeholder {
+  width: 100%;
+  height: 200px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px dashed #dcdfe6;
 }
 
 

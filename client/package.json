@@ -21,10 +21,16 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "node_modules/sharp/**/*"
     ],
     "asar": true,
+    "asarUnpack": [
+      "node_modules/sharp/**/*"
+    ],
     "compression": "maximum",
+    "npmRebuild": true,
+    "nodeGypRebuild": false,
     "mac": {
       "category": "public.app-category.utilities",
       "target": [
@@ -96,7 +102,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "electron",
+      "electron-winstaller",
       "esbuild",
+      "sharp",
       "vue-demi"
     ]
   }
