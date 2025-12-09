@@ -1,1 +1,230 @@
-"use strict";const n=require("electron"),c=require("path"),E=require("fs/promises"),w=require("fs"),T=require("url"),q=require("pdfkit"),b=require("sharp"),j=require("woff2-encoder");var P=typeof document<"u"?document.currentScript:null;const x=T.fileURLToPath(typeof document>"u"?require("url").pathToFileURL(__filename).href:P&&P.tagName.toUpperCase()==="SCRIPT"&&P.src||new URL("main.js",document.baseURI).href),S=c.dirname(x);n.app.commandLine.appendSwitch("disable-features","AutofillServerCommunication");const D=!!process.env.VITE_DEV_SERVER_URL,U=[".jpg",".jpeg",".png",".gif",".bmp",".webp"];async function R(l,s=l){const a=[];try{const t=await E.readdir(l);for(const i of t){const d=c.join(l,i);try{const f=await E.stat(d);if(f.isDirectory()){const e=await R(d,s);a.push(...e)}else if(f.isFile()){const e=c.extname(i).toLowerCase();U.includes(e)&&a.push({name:i,path:d,relativePath:c.relative(s,d)})}}catch(f){console.error(`无法访问文件: ${d}`,f)}}}catch(t){console.error(`无法读取目录: ${l}`,t)}return a}let r=null;function F(){r=new n.BrowserWindow({width:1200,height:800,minWidth:800,minHeight:600,webPreferences:{nodeIntegration:!1,contextIsolation:!0,preload:c.join(S,"preload.js"),webSecurity:!1},titleBarStyle:"default",show:!1}),D?r.loadURL(process.env.VITE_DEV_SERVER_URL):r.loadFile(c.join(S,"../dist/index.html")),r.once("ready-to-show",()=>{r.show(),D&&r.webContents.openDevTools()}),r.on("closed",()=>{r=null})}n.app.whenReady().then(()=>{F(),n.app.on("activate",()=>{n.BrowserWindow.getAllWindows().length===0&&F()})});n.app.on("window-all-closed",()=>{process.platform!=="darwin"&&n.app.quit()});n.ipcMain.handle("ping",async()=>"pong");n.ipcMain.handle("select-image-folder",async()=>{const l=await n.dialog.showOpenDialog(r,{properties:["openDirectory"],title:"选择图片目录"});if(l.canceled||l.filePaths.length===0)return{canceled:!0,images:[]};const s=l.filePaths[0];try{const a=await R(s);return a.sort((t,i)=>t.relativePath.localeCompare(i.relativePath,void 0,{numeric:!0})),{canceled:!1,folderPath:s,images:a}}catch(a){return console.error("读取目录失败:",a),{canceled:!1,error:a.message,images:[]}}});n.ipcMain.handle("generate-pdf",async(l,{images:s,options:a={}})=>{try{const t=await n.dialog.showSaveDialog(r,{title:"保存 PDF 文件",defaultPath:"output.pdf",filters:[{name:"PDF 文件",extensions:["pdf"]}]});if(t.canceled||!t.filePath)return{success:!1,canceled:!0};const i=t.filePath,d=s.length;return new Promise(async f=>{try{const e=new q({autoFirstPage:!1}),m=w.createWriteStream(i);e.pipe(m);const y=c.join(S,"fonts","SourceHanSans.woff2");if(w.existsSync(y))try{const o=w.readFileSync(y),p=await j.decompress(o);e.font(p)}catch(o){console.error("字体加载失败，使用默认字体:",o.message)}else console.warn("字体文件未找到，使用默认字体");const u=40;for(let o=0;o<s.length;o++){const p=s[o];r.webContents.send("pdf-progress",{current:o+1,total:d,percent:Math.round((o+1)/d*100)});try{console.log(`正在压缩图片: ${c.basename(p.path)}`);const g=await b(p.path).jpeg({quality:75,progressive:!0}).toBuffer(),h=e.openImage(g),v=c.basename(c.dirname(p.path)),I=Math.max(16,Math.min(120,Math.floor(h.width/10))),_=I*1.5;e.addPage({size:[h.width+u*2,h.height+u*2+_]}),e.fontSize(I).text(v,u,u,{align:"center",width:h.width}),e.image(h,u,u+_,{width:h.width,height:h.height})}catch(g){console.error(`处理图片失败: ${p.path}`,g.message)}}e.end(),m.on("finish",()=>{console.log(`PDF 已成功生成: ${i}`),n.shell.showItemInFolder(i),f({success:!0,outputPath:i,totalPages:s.length})}),m.on("error",o=>{console.error("保存 PDF 时出错:",o.message),f({success:!1,error:String(o.message||"保存文件时出错")})})}catch(e){console.error("生成 PDF 失败:",e),f({success:!1,error:String(e.message||e||"生成 PDF 时发生未知错误")})}})}catch(t){return console.error("generate-pdf 外层错误:",t),{success:!1,error:String(t.message||t||"处理 PDF 请求时发生错误")}}});
+"use strict";
+const electron = require("electron");
+const path = require("path");
+const promises = require("fs/promises");
+const fs = require("fs");
+const url = require("url");
+const PDFDocument = require("pdfkit");
+const sharp = require("sharp");
+const woff2Encoder = require("woff2-encoder");
+var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
+const __filename$1 = url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main.js", document.baseURI).href);
+const __dirname$1 = path.dirname(__filename$1);
+electron.app.commandLine.appendSwitch("disable-features", "AutofillServerCommunication");
+const isDev = !!process.env.VITE_DEV_SERVER_URL;
+const SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"];
+async function generateThumbnail(imagePath, maxWidth = 400, maxHeight = 400) {
+  try {
+    const buffer = await sharp(imagePath).resize(maxWidth, maxHeight, {
+      fit: "inside",
+      // 保持比例，不裁剪
+      withoutEnlargement: true
+      // 如果图片比目标小，不放大
+    }).jpeg({ quality: 70 }).toBuffer();
+    return `data:image/jpeg;base64,${buffer.toString("base64")}`;
+  } catch (err) {
+    console.error(`生成缩略图失败: ${imagePath}`, err.message);
+    return null;
+  }
+}
+async function getAllImages(dir, baseDir = dir) {
+  const images = [];
+  try {
+    const entries = await promises.readdir(dir);
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry);
+      try {
+        const fileStat = await promises.stat(fullPath);
+        if (fileStat.isDirectory()) {
+          const subImages = await getAllImages(fullPath, baseDir);
+          images.push(...subImages);
+        } else if (fileStat.isFile()) {
+          const ext = path.extname(entry).toLowerCase();
+          if (SUPPORTED_IMAGE_EXTENSIONS.includes(ext)) {
+            images.push({
+              name: entry,
+              path: fullPath,
+              relativePath: path.relative(baseDir, fullPath)
+              // 相对路径，用于显示
+            });
+          }
+        }
+      } catch (err) {
+        console.error(`无法访问文件: ${fullPath}`, err);
+      }
+    }
+  } catch (err) {
+    console.error(`无法读取目录: ${dir}`, err);
+  }
+  return images;
+}
+let mainWindow = null;
+function createWindow() {
+  mainWindow = new electron.BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname$1, "preload.js"),
+      // 允许加载本地文件（用于图片预览）
+      webSecurity: false
+    },
+    titleBarStyle: "default",
+    show: false
+  });
+  if (isDev) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  } else {
+    mainWindow.loadFile(path.join(__dirname$1, "../dist/index.html"));
+  }
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    if (isDev) {
+      mainWindow.webContents.openDevTools();
+    }
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+electron.app.whenReady().then(() => {
+  createWindow();
+  electron.app.on("activate", () => {
+    if (electron.BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+electron.app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    electron.app.quit();
+  }
+});
+electron.ipcMain.handle("ping", async () => {
+  return "pong";
+});
+electron.ipcMain.handle("select-image-folder", async () => {
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory"],
+    title: "选择图片目录"
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, images: [] };
+  }
+  const folderPath = result.filePaths[0];
+  try {
+    const images = await getAllImages(folderPath);
+    images.sort((a, b) => a.relativePath.localeCompare(b.relativePath, void 0, { numeric: true }));
+    console.log(`开始生成 ${images.length} 张缩略图...`);
+    const thumbnailPromises = images.map(async (image) => {
+      const thumbnail = await generateThumbnail(image.path);
+      return { ...image, thumbnail };
+    });
+    const imagesWithThumbnails = await Promise.all(thumbnailPromises);
+    console.log("缩略图生成完成");
+    return {
+      canceled: false,
+      folderPath,
+      images: imagesWithThumbnails
+    };
+  } catch (error) {
+    console.error("读取目录失败:", error);
+    return { canceled: false, error: error.message, images: [] };
+  }
+});
+electron.ipcMain.handle("generate-pdf", async (event, { images, options = {} }) => {
+  try {
+    const saveResult = await electron.dialog.showSaveDialog(mainWindow, {
+      title: "保存 PDF 文件",
+      defaultPath: "output.pdf",
+      filters: [{ name: "PDF 文件", extensions: ["pdf"] }]
+    });
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, canceled: true };
+    }
+    const outputPath = saveResult.filePath;
+    const totalImages = images.length;
+    return new Promise(async (resolve) => {
+      try {
+        const doc = new PDFDocument({ autoFirstPage: false });
+        const stream = fs.createWriteStream(outputPath);
+        doc.pipe(stream);
+        const fontPath = path.join(__dirname$1, "fonts", "SourceHanSans.woff2");
+        if (fs.existsSync(fontPath)) {
+          try {
+            const fontBuffer = fs.readFileSync(fontPath);
+            const decompressedFont = await woff2Encoder.decompress(fontBuffer);
+            doc.font(decompressedFont);
+          } catch (fontErr) {
+            console.error("字体加载失败，使用默认字体:", fontErr.message);
+          }
+        } else {
+          console.warn("字体文件未找到，使用默认字体");
+        }
+        const margin = 40;
+        for (let i = 0; i < images.length; i++) {
+          const image = images[i];
+          mainWindow.webContents.send("pdf-progress", {
+            current: i + 1,
+            total: totalImages,
+            percent: Math.round((i + 1) / totalImages * 100)
+          });
+          try {
+            console.log(`正在压缩图片: ${path.basename(image.path)}`);
+            const compressedBuffer = await sharp(image.path).jpeg({ quality: 75, progressive: true }).toBuffer();
+            const pdfImage = doc.openImage(compressedBuffer);
+            const dirName = path.basename(path.dirname(image.path));
+            const FONT_SIZE_RATIO = 10;
+            const fontSize = Math.max(16, Math.min(120, Math.floor(pdfImage.width / FONT_SIZE_RATIO)));
+            const textHeight = fontSize * 1.5;
+            doc.addPage({
+              size: [pdfImage.width + margin * 2, pdfImage.height + margin * 2 + textHeight]
+            });
+            doc.fontSize(fontSize).text(dirName, margin, margin, {
+              align: "center",
+              width: pdfImage.width
+            });
+            doc.image(pdfImage, margin, margin + textHeight, {
+              width: pdfImage.width,
+              height: pdfImage.height
+            });
+          } catch (imgError) {
+            console.error(`处理图片失败: ${image.path}`, imgError.message);
+          }
+        }
+        doc.end();
+        stream.on("finish", () => {
+          console.log(`PDF 已成功生成: ${outputPath}`);
+          electron.shell.showItemInFolder(outputPath);
+          resolve({
+            success: true,
+            outputPath,
+            totalPages: images.length
+          });
+        });
+        stream.on("error", (err) => {
+          console.error("保存 PDF 时出错:", err.message);
+          resolve({
+            success: false,
+            error: String(err.message || "保存文件时出错")
+          });
+        });
+      } catch (error) {
+        console.error("生成 PDF 失败:", error);
+        resolve({
+          success: false,
+          error: String(error.message || error || "生成 PDF 时发生未知错误")
+        });
+      }
+    });
+  } catch (outerError) {
+    console.error("generate-pdf 外层错误:", outerError);
+    return {
+      success: false,
+      error: String(outerError.message || outerError || "处理 PDF 请求时发生错误")
+    };
+  }
+});

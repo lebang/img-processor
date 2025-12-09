@@ -22,6 +22,30 @@ const isDev = !!process.env.VITE_DEV_SERVER_URL
 const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
 
 /**
+ * 生成图片缩略图（base64格式）
+ * @param {string} imagePath - 图片路径
+ * @param {number} maxWidth - 最大宽度
+ * @param {number} maxHeight - 最大高度
+ * @returns {Promise<string>} base64 缩略图
+ */
+async function generateThumbnail(imagePath, maxWidth = 400, maxHeight = 400) {
+  try {
+    const buffer = await sharp(imagePath)
+      .resize(maxWidth, maxHeight, {
+        fit: 'inside',  // 保持比例，不裁剪
+        withoutEnlargement: true  // 如果图片比目标小，不放大
+      })
+      .jpeg({ quality: 70 })  // 转为 jpeg 压缩
+      .toBuffer()
+    
+    return `data:image/jpeg;base64,${buffer.toString('base64')}`
+  } catch (err) {
+    console.error(`生成缩略图失败: ${imagePath}`, err.message)
+    return null
+  }
+}
+
+/**
  * 递归遍历目录，获取所有图片文件
  * @param {string} dir - 目录路径
  * @param {string} baseDir - 基础目录（用于计算相对路径）
@@ -149,10 +173,19 @@ ipcMain.handle('select-image-folder', async () => {
     // 按相对路径排序（自然排序，支持数字序号）
     images.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }))
 
+    // 并行生成所有缩略图
+    console.log(`开始生成 ${images.length} 张缩略图...`)
+    const thumbnailPromises = images.map(async (image) => {
+      const thumbnail = await generateThumbnail(image.path)
+      return { ...image, thumbnail }
+    })
+    const imagesWithThumbnails = await Promise.all(thumbnailPromises)
+    console.log('缩略图生成完成')
+
     return {
       canceled: false,
       folderPath,
-      images
+      images: imagesWithThumbnails
     }
   } catch (error) {
     console.error('读取目录失败:', error)

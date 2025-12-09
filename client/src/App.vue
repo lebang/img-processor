@@ -47,26 +47,13 @@
               </div>
             </div>
             
-            <!-- 图片预览区域 -->
-            <div v-if="images.length > 0" class="images-preview">
-              <el-divider content-position="left">
-                <el-icon><Picture /></el-icon> 图片预览（按文件名排序）
-              </el-divider>
-              
-              <div class="images-grid">
-                <div 
-                  v-for="(image, index) in images" 
-                  :key="image.path" 
-                  class="image-item"
-                >
-                  <div class="image-index">{{ index + 1 }}</div>
-                  <img :src="'file://' + image.path" :alt="image.name" />
-                  <div class="image-name" :title="image.relativePath || image.name">
-                    {{ image.relativePath || image.name }}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- 图片预览区域（可拖拽排序） -->
+            <ImagePreview 
+              v-if="images.length > 0" 
+              :images="images"
+              @update:images="images = $event"
+              @order-changed="onImageOrderChanged"
+            />
             
             <!-- 选项设置 -->
             <div v-if="images.length > 0" class="pdf-options">
@@ -134,6 +121,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
+import ImagePreview from './components/ImagePreview.vue'
 
 // 状态
 const isElectronReady = ref(false)
@@ -220,6 +208,11 @@ async function selectImageFolder() {
   } catch (error) {
     ElMessage.error(`选择目录失败: ${error.message}`)
   }
+}
+
+// 图片顺序变化
+function onImageOrderChanged(newImages) {
+  console.log('图片顺序已更新', newImages.map(img => img.name))
 }
 
 // 生成 PDF
@@ -354,65 +347,7 @@ html, body, #app {
   flex-wrap: wrap;
 }
 
-.images-preview {
-  width: 100%;
-}
 
-.images-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 16px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 8px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.image-item {
-  position: relative;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.image-item:hover {
-  transform: scale(1.05);
-}
-
-.image-index {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  background: rgba(64, 158, 255, 0.9);
-  color: white;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.image-item img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-}
-
-.image-name {
-  padding: 8px;
-  font-size: 12px;
-  color: #606266;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
 
 .pdf-options {
   width: 100%;
@@ -438,5 +373,28 @@ html, body, #app {
   background: rgba(255, 255, 255, 0.9);
   color: #606266;
   font-size: 14px;
+}
+
+/* 全局滚动条美化 */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 </style>
