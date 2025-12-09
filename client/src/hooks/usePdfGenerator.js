@@ -16,7 +16,7 @@ export function usePdfGenerator() {
   })
 
   // 生成进度
-  const progress = reactive({
+  const progress = ref({
     current: 0,
     total: 0,
     percent: 0
@@ -25,9 +25,11 @@ export function usePdfGenerator() {
   // 设置进度监听
   function setupProgressListener() {
     electron.onPdfProgress((data) => {
-      progress.current = data.current
-      progress.total = data.total
-      progress.percent = data.percent
+      progress.value = {
+        current: data.current,
+        total: data.total,
+        percent: data.percent
+      }
     })
   }
 
@@ -49,9 +51,11 @@ export function usePdfGenerator() {
     }
 
     isGenerating.value = true
-    progress.current = 0
-    progress.total = images.length
-    progress.percent = 0
+    progress.value = {
+      current: 0,
+      total: images.length,
+      percent: 0
+    }
 
     try {
       // 将 Vue 响应式数组转换为普通数组，避免 IPC 序列化失败

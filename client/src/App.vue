@@ -1,6 +1,5 @@
 <template>
   <div class="app-container">
-    <el-container class="main-container">
       <el-header class="header">
         <div class="logo">
           <el-icon :size="32" color="#409EFF"><Picture /></el-icon>
@@ -14,130 +13,76 @@
       </el-header>
       
       <el-main class="main-content">
-        <!-- PDF 生成功能卡片 -->
-        <el-card class="pdf-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span> PDF 生成</span>
-            </div>
-          </template>
-          
-          <el-space direction="vertical" :size="20" fill style="width: 100%">
-            <!-- 选择目录区域 -->
-            <div class="folder-select-area">
-              <el-button 
-                type="primary" 
-                size="large" 
-                @click="selectImageFolder"
-                :disabled="!isElectronReady || isGenerating || isLoading"
-                :loading="isLoading"
-              >
-                <el-icon v-if="!isLoading"><FolderOpened /></el-icon>
-                {{ loadingButtonText }}
-              </el-button>
-              
-              <div v-if="selectedFolder" class="folder-info">
-                <el-tag type="info" effect="plain">
-                  {{ selectedFolder }}
-                </el-tag>
-                <el-tag type="success" effect="plain">
-                  共 {{ images.length }} 张图片
-                </el-tag>
-              </div>
-            </div>
+        <div class="card-header-area">
+          <div class="folder-opts">
+            <el-button 
+              size="large" 
+              @click="selectImageFolder"
+              :disabled="!isElectronReady || isGenerating || isLoading"
+              :loading="isLoading"
+            >
+              <el-icon v-if="!isLoading"><FolderOpened /></el-icon>
+              {{ loadingButtonText }}
+            </el-button>
 
-                       <!-- 选项设置 -->
-            <div v-if="images.length > 0" class="pdf-options">
-              <el-divider content-position="left">
-                <el-icon><Setting /></el-icon> 生成选项
-              </el-divider>
-              
-              <el-form :model="pdfOptions" label-width="120px">
-                <el-form-item label="页面尺寸">
-                  <el-radio-group v-model="pdfOptions.fitToImage">
-                    <el-radio :value="false">A4 标准尺寸（图片自适应居中）</el-radio>
-                    <el-radio :value="true">按图片原始尺寸</el-radio>
-                  </el-radio-group>
-                </el-form-item>
-              </el-form>
-            </div>
+            <PdfSizeSelector 
+              v-if="images.length" 
+              v-model="pdfOptions.fitToImage"
+            />
             
-            <!-- 进度条 -->
-            <div v-if="isGenerating" class="progress-area">
-              <el-progress 
-                :percentage="progress.percent" 
-                :stroke-width="20"
-                :format="progressFormat"
-              />
-              <p class="progress-text">
-                正在处理第 {{ progress.current }} / {{ progress.total }} 张图片...
-              </p>
-            </div>
-            
-            <!-- 生成按钮 -->
             <el-button
-              v-if="images.length > 0"
-              type="success"
+              v-if="images.length"
+              type="primary"
               size="large"
               @click="handleGeneratePdf"
               :loading="isGenerating"
               :disabled="!isElectronReady"
-              style="width: 100%"
             >
               <el-icon><Document /></el-icon>
-              {{ isGenerating ? '正在生成...' : '生成 PDF' }}
+              {{ isGenerating ? '正在生成...' : '生成 PDF 文件' }}
             </el-button>
-            
-            <!-- 加载进度条 -->
-            <div v-if="isLoading && loadingProgress.total > 0" class="thumbnail-progress">
-              <el-progress 
-                :percentage="loadingProgress.progress" 
-                :stroke-width="16"
-                :format="() => `${loadingProgress.processed}/${loadingProgress.total}`"
-              />
-              <p class="progress-text">正在生成缩略图...</p>
+            <div v-if="selectedFolder" class="folder-info">
+              <el-tag type="info" effect="plain">{{ selectedFolder }}</el-tag>
+              <el-tag type="success" effect="plain">共 {{ images.length }} 张图片</el-tag>
             </div>
-
-            <!-- 图片预览区域（可拖拽排序） -->
-            <div 
-              v-loading="isLoading && images.length === 0"
-              element-loading-text="正在扫描目录..."
-              element-loading-background="rgba(255, 255, 255, 0.9)"
-              class="image-preview-wrapper"
-            >
-              <ImagePreview 
-                v-if="images.length > 0" 
-                :images="images"
-                @update:images="handleImagesUpdate"
-                @order-changed="onImageOrderChanged"
-              />
-              <!-- 占位区域，确保 loading 有显示空间 -->
-              <div v-if="isLoading && images.length === 0" class="loading-placeholder"></div>
-            </div>
-            
-            <!-- 提示信息 -->
-            <el-alert
-              v-if="!isElectronReady"
-              title="请在桌面应用中使用此功能"
-              type="warning"
-              :closable="false"
-              show-icon
+          </div>
+          
+          <el-alert
+            v-if="!isElectronReady"
+            title="请在桌面应用中使用此功能"
+            type="warning"
+            :closable="false"
+            show-icon
+          />
+        </div>
+        <div class="card-preview-area">
+          <el-card> 
+            <ImagePreview 
+              v-if="images.length" 
+              :images="images"
+              @update:images="handleImagesUpdate"
+              @order-changed="onImageOrderChanged"
             />
-          </el-space>
-        </el-card>
-        
-
+            <div v-else class="empty-placeholder">
+              <el-empty description="请选择图片目录" />
+            </div>
+          </el-card>
+        </div>
       </el-main>
       
       <el-footer class="footer">
         <span>IMG Processor © 2024 | Powered by Vue 3 + Element Plus + Electron</span>
       </el-footer>
-    </el-container>
+    
+    <!-- 进度蒙层 -->
+    <LoadingOverlay v-bind="overlayConfig" />
   </div>
 </template>
 
 <script setup>
 import ImagePreview from './components/ImagePreview.vue'
+import LoadingOverlay from './components/LoadingOverlay.vue'
+import PdfSizeSelector from './components/PdfSizeSelector.vue'
 
 // 引入 Hooks
 import { useElectron } from '@/hooks/useElectron'
@@ -158,21 +103,47 @@ const {
   onImageOrderChanged 
 } = useImageFolder()
 
-// 加载按钮文案
+const { 
+  isGenerating, 
+  pdfOptions, 
+  progress, 
+  generatePdf 
+} = usePdfGenerator()
+
 import { computed } from 'vue'
+
+// 加载按钮文案
 const loadingButtonText = computed(() => {
   if (!isLoading.value) return '选择图片目录'
   if (loadingProgress.value.total === 0) return '正在扫描目录...'
   return `正在加载缩略图 ${loadingProgress.value.progress}%`
 })
 
-const { 
-  isGenerating, 
-  pdfOptions, 
-  progress, 
-  progressFormat, 
-  generatePdf 
-} = usePdfGenerator()
+// 蒙层配置（统一管理两种进度状态）
+const overlayConfig = computed(() => {
+  // PDF生成进度优先级更高
+  if (isGenerating.value) {
+    return {
+      visible: true,
+      type: 'generating',
+      current: progress.value.current,
+      total: progress.value.total,
+      percent: progress.value.percent
+    }
+  }
+  // 图片加载进度 - isLoading为true时立即显示蒙层
+  if (isLoading.value) {
+    return {
+      visible: true,
+      type: 'loading',
+      current: loadingProgress.value.processed,
+      total: loadingProgress.value.total,
+      percent: loadingProgress.value.progress
+    }
+  }
+  // 隐藏状态
+  return { visible: false }
+})
 
 // 设置菜单事件（需要传入回调）
 useMenuEvents({
@@ -181,36 +152,17 @@ useMenuEvents({
   getImages: () => images.value
 })
 
-// 处理图片更新
-function handleImagesUpdate(newImages) {
-  updateImages(newImages)
-}
-
-// 处理生成 PDF
-function handleGeneratePdf() {
-  generatePdf(images.value)
-}
+// 事件处理
+const handleImagesUpdate = updateImages
+const handleGeneratePdf = () => generatePdf(images.value)
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body, #app {
-  height: 100%;
-  width: 100%;
-}
-
+<style scoped>
 .app-container {
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.main-container {
-  height: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
@@ -243,102 +195,49 @@ html, body, #app {
 }
 
 .main-content {
+  flex: 1;
   padding: 24px;
-  overflow-y: auto;
-}
-
-.pdf-card {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.folder-select-area {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
 }
+
+.card-header-area {
+  flex-shrink: 0;
+  margin-bottom: 20px;
+}
+
+.folder-opts {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.card-preview-area {
+  flex: 1;
+  min-height: 50px;
+}
+
 
 .folder-info {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  margin-top: 12px;
 }
 
-
-
-.pdf-options {
-  width: 100%;
+/* 空状态占位 */
+.empty-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.progress-area {
-  width: 100%;
-}
-
-.progress-text {
-  text-align: center;
-  color: #909399;
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-/* 缩略图加载进度 */
-.thumbnail-progress {
-  width: 100%;
-  padding: 12px 0;
-}
-
-/* 图片预览容器 */
-.image-preview-wrapper {
-  width: 100%;
-  min-height: 50px;
-}
-
-.loading-placeholder {
-  width: 100%;
-  height: 200px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  border: 1px dashed #dcdfe6;
-}
-
-
 
 .footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.9);
+  padding: 12px;
+  text-align: center;
   color: #606266;
   font-size: 14px;
-}
-
-/* 全局滚动条美化 */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #909399;
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.9);
 }
 </style>

@@ -1,9 +1,5 @@
 <template>
   <div class="images-preview">
-    <el-divider content-position="left">
-      <el-icon><Picture /></el-icon> 图片预览（可拖拽排序）
-    </el-divider>
-    
     <draggable 
       v-model="localImages"
       item-key="path"
@@ -27,7 +23,6 @@
         </div>
       </template>
     </draggable>
-    
   </div>
 </template>
 
@@ -80,7 +75,7 @@ function deleteImage(index) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 16px;
-  max-height: 400px;
+  max-height: 460px;
   overflow-y: auto;
   padding: 8px;
   padding-right: 12px;

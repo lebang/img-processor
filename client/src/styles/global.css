@@ -1,0 +1,38 @@
+/**
+ * 全局样式
+ */
+
+/* CSS 重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+}
+
+/* 全局滚动条美化 */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
