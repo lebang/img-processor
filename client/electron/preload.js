@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
 
 // 暴露安全的 API 给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -8,6 +8,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 平台信息
   platform: process.platform,
   
-  // 后续可扩展更多 API
-  // 例如：文件选择、系统对话框等
+  // 选择图片目录
+  selectImageFolder: () => ipcRenderer.invoke('select-image-folder'),
+  
+  // 生成 PDF
+  generatePdf: (images, options) => ipcRenderer.invoke('generate-pdf', { images, options }),
+  
+  // 监听 PDF 生成进度
+  onPdfProgress: (callback) => {
+    ipcRenderer.on('pdf-progress', (event, data) => callback(data))
+  },
+  
+  // 移除 PDF 进度监听
+  removePdfProgressListener: () => {
+    ipcRenderer.removeAllListeners('pdf-progress')
+  }
 })

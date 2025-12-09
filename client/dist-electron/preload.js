@@ -1,10 +1,1 @@
-"use strict";
-const { contextBridge, ipcRenderer } = require("electron");
-contextBridge.exposeInMainWorld("electronAPI", {
-  // ping-pong 测试
-  ping: () => ipcRenderer.invoke("ping"),
-  // 平台信息
-  platform: process.platform
-  // 后续可扩展更多 API
-  // 例如：文件选择、系统对话框等
-});
+"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("electronAPI",{ping:()=>e.ipcRenderer.invoke("ping"),platform:process.platform,selectImageFolder:()=>e.ipcRenderer.invoke("select-image-folder"),generatePdf:(r,n)=>e.ipcRenderer.invoke("generate-pdf",{images:r,options:n}),onPdfProgress:r=>{e.ipcRenderer.on("pdf-progress",(n,o)=>r(o))},removePdfProgressListener:()=>{e.ipcRenderer.removeAllListeners("pdf-progress")}});

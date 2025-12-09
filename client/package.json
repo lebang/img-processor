@@ -23,34 +23,80 @@
       "dist/**/*",
       "dist-electron/**/*"
     ],
+    "asar": true,
+    "compression": "maximum",
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg", "zip"]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "writeUpdateInfo": false
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "linux": {
-      "target": ["AppImage", "deb"]
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     }
   },
-  "keywords": ["electron", "vue3", "vite", "img-processor"],
+  "keywords": [
+    "electron",
+    "vue3",
+    "vite",
+    "img-processor"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "vue": "^3.5.13",
+    "@element-plus/icons-vue": "^2.3.1",
     "element-plus": "^2.9.5",
-    "@element-plus/icons-vue": "^2.3.1"
+    "pdfkit": "^0.17.2",
+    "sharp": "^0.34.5",
+    "vue": "^3.5.13",
+    "woff2-encoder": "^2.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.0.3",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
+    "terser": "^5.36.0",
+    "unplugin-auto-import": "^0.18.6",
+    "unplugin-vue-components": "^0.27.5",
+    "vite": "^6.0.3",
     "vite-plugin-electron": "^0.28.8",
     "vite-plugin-electron-renderer": "^0.14.6"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["electron", "esbuild", "vue-demi"]
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "vue-demi"
+    ]
   }
 }
