@@ -29,7 +29,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
-import { Picture, Rank, InfoFilled, Delete } from '@element-plus/icons-vue'
+import { Rank, Delete } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps({

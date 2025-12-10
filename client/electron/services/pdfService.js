@@ -1,6 +1,7 @@
 import { join, dirname, basename } from 'path'
 import { createWriteStream, existsSync, readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
+import { app } from 'electron'
 import PDFDocument from 'pdfkit'
 import sharp from 'sharp'
 import { decompress } from 'woff2-encoder'
@@ -27,12 +28,30 @@ export async function generatePdf(outputPath, images, onProgress) {
       doc.pipe(stream)
 
       // 加载字体文件（用于显示中文目录名）
-      // 字体文件在 electron 目录下
-      const fontPath = join(__dirname, '..', 'fonts', 'SourceHanSans.woff2')
-      if (existsSync(fontPath)) {
+      // 在开发环境下，当前文件在 dist-electron/services/pdfService.js
+      // 在打包后，当前文件在 app.asar 内
+      const possiblePaths = [
+        // 开发环境：从 dist-electron/services 向上两级到 client，再进入 electron/fonts
+        join(__dirname, '..', '..', 'electron', 'fonts', 'SourceHanSans.woff2'),
+        // 打包后：从 app.asar 内的位置查找
+        join(app.getAppPath(), 'electron', 'fonts', 'SourceHanSans.woff2'),
+        // 备用：从 resources 目录查找
+        join(dirname(app.getAppPath()), 'electron', 'fonts', 'SourceHanSans.woff2')
+      ]
+      
+      let fontPath = null
+      for (const path of possiblePaths) {
+        if (existsSync(path)) {
+          fontPath = path
+          break
+        }
+      }
+      
+      let decompressedFont = null
+      if (fontPath) {
         try {
           const fontBuffer = readFileSync(fontPath)
-          const decompressedFont = await decompress(fontBuffer)
+          decompressedFont = await decompress(fontBuffer)
           doc.font(decompressedFont)
         } catch (fontErr) {
           console.error('字体加载失败，使用默认字体:', fontErr.message)
@@ -59,7 +78,6 @@ export async function generatePdf(outputPath, images, onProgress) {
 
         try {
           // 使用 sharp 压缩图片
-          console.log(`正在压缩图片: ${basename(image.path)}`)
           const compressedBuffer = await sharp(image.path)
             .jpeg({ quality: 75, progressive: true })
             .toBuffer()

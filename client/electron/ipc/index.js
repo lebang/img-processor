@@ -83,6 +83,7 @@ export function registerIpcHandlers() {
     } catch (error) {
       console.error('加载图片失败:', error)
       return { success: false, error: error.message }
+    }
   })
 
   // 【新】仅选择目录（不扫描图片）
