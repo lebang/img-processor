@@ -83,40 +83,12 @@ export function registerIpcHandlers() {
     } catch (error) {
       console.error('加载图片失败:', error)
       return { success: false, error: error.message }
-    }
   })
 
-  // 【保留兼容】选择图片目录（原方法，一次性返回）
-  ipcMain.handle('select-image-folder', async () => {
-    const result = await dialog.showOpenDialog(mainWindowRef, {
-      properties: ['openDirectory'],
-      title: '选择图片目录'
-    })
-
-    if (result.canceled || result.filePaths.length === 0) {
-      return { canceled: true, images: [] }
-    }
-
-    const folderPath = result.filePaths[0]
-    
+  // 【新】仅选择目录（不扫描图片）
+  // 显示保存 PDF 对话框
+  ipcMain.handle('show-save-pdf-dialog', async () => {
     try {
-      const imagesWithThumbnails = await loadImagesFromFolder(folderPath)
-
-      return {
-        canceled: false,
-        folderPath,
-        images: imagesWithThumbnails
-      }
-    } catch (error) {
-      console.error('读取目录失败:', error)
-      return { canceled: false, error: error.message, images: [] }
-    }
-  })
-
-  // 生成 PDF
-  ipcMain.handle('generate-pdf', async (event, { images, options = {} }) => {
-    try {
-      // 弹出保存对话框
       const saveResult = await dialog.showSaveDialog(mainWindowRef, {
         title: '保存 PDF 文件',
         defaultPath: 'output.pdf',
@@ -124,11 +96,19 @@ export function registerIpcHandlers() {
       })
 
       if (saveResult.canceled || !saveResult.filePath) {
-        return { success: false, canceled: true }
+        return { canceled: true, filePath: null }
       }
 
-      const outputPath = saveResult.filePath
+      return { canceled: false, filePath: saveResult.filePath }
+    } catch (error) {
+      console.error('显示保存对话框失败:', error)
+      return { canceled: true, filePath: null, error: error.message }
+    }
+  })
 
+  // 生成 PDF（不带对话框，直接生成）
+  ipcMain.handle('generate-pdf-direct', async (event, { images, outputPath, options = {} }) => {
+    try {
       // 进度回调
       const onProgress = (progress) => {
         mainWindowRef?.webContents.send('pdf-progress', progress)
@@ -144,7 +124,7 @@ export function registerIpcHandlers() {
 
       return result
     } catch (outerError) {
-      console.error('generate-pdf 外层错误:', outerError)
+      console.error('generate-pdf-direct 外层错误:', outerError)
       return {
         success: false,
         error: String(outerError.message || outerError || '处理 PDF 请求时发生错误')

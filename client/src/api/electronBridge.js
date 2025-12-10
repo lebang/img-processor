@@ -30,8 +30,13 @@ export default {
   removeImageListeners: safe(bridge.removeImageListeners),
 
   // 【保留兼容】核心功能（一次性返回）
-  selectImageFolder: safe(bridge.selectImageFolder),
   generatePdf: safe(bridge.generatePdf),
+
+  // 【新】分步PDF生成 - 显示保存对话框
+  showSavePdfDialog: safe(bridge.showSavePdfDialog),
+  
+  // 【新】分步PDF生成 - 直接生成（不带对话框）
+  generatePdfDirect: safe(bridge.generatePdfDirect || bridge.generatePdf),
 
   // PDF 进度监听
   onPdfProgress: safe(bridge.onPdfProgress),

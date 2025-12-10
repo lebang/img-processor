@@ -36,11 +36,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('thumbnails-complete')
   },
   
-  // 【保留兼容】选择图片目录（一次性返回）
-  selectImageFolder: () => ipcRenderer.invoke('select-image-folder'),
-  
   // 生成 PDF
   generatePdf: (images, options) => ipcRenderer.invoke('generate-pdf', { images, options }),
+  
+  // 【新】显示保存 PDF 对话框
+  showSavePdfDialog: () => ipcRenderer.invoke('show-save-pdf-dialog'),
+  
+  // 【新】直接生成 PDF（不带对话框）
+  generatePdfDirect: (images, outputPath, options) => ipcRenderer.invoke('generate-pdf-direct', { images, outputPath, options }),
   
   // 监听 PDF 生成进度
   onPdfProgress: (callback) => {

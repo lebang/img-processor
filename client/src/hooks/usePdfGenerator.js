@@ -50,14 +50,23 @@ export function usePdfGenerator() {
       return
     }
 
-    isGenerating.value = true
-    progress.value = {
-      current: 0,
-      total: images.length,
-      percent: 0
-    }
-
     try {
+      // 第一步：显示保存对话框，让用户选择保存位置
+      const dialogResult = await electron.showSavePdfDialog()
+      
+      if (dialogResult.canceled || !dialogResult.filePath) {
+        ElMessage.info('已取消保存')
+        return
+      }
+
+      // 第二步：用户确认保存后，开始显示蒙层和进度
+      isGenerating.value = true
+      progress.value = {
+        current: 0,
+        total: images.length,
+        percent: 0
+      }
+
       // 将 Vue 响应式数组转换为普通数组，避免 IPC 序列化失败
       const plainImages = images.map(img => ({
         name: img.name,
@@ -65,20 +74,16 @@ export function usePdfGenerator() {
         relativePath: img.relativePath
       }))
 
-      const result = await electron.generatePdf(plainImages, {
+      // 第三步：调用PDF生成（使用新的直接生成API）
+      const result = await electron.generatePdfDirect(plainImages, dialogResult.filePath, {
         fitToImage: pdfOptions.fitToImage,
         pageSize: pdfOptions.pageSize
       })
 
-      if (result.canceled) {
-        ElMessage.info('已取消保存')
-        return
-      }
-
       if (result.success) {
         ElNotification({
           title: 'PDF 生成成功',
-          message: `已保存到: ${result.outputPath}`,
+          message: `已保存到: ${dialogResult.filePath}`,
           type: 'success',
           duration: 5000
         })
