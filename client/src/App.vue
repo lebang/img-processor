@@ -86,7 +86,7 @@ import { useMenuEvents } from '@/hooks/useMenuEvents'
 // 使用 Hooks
 const { isElectronReady, platform, process } = useElectron()
 
-// console.log('process: 89', JSON.parse(process.value))
+console.log('process: 89', process.value)
 
 const { 
   selectedFolder, 

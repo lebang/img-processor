@@ -7,7 +7,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 平台信息
   platform: process.platform,
-  process: JSON.stringify(process),
+  process: {
+    platform: process.platform,
+    arch: process.arch,
+    version: process.version,
+    versions: process.versions,
+    env: {
+      NODE_ENV: process.env.NODE_ENV
+    }
+  },
 
   
   // 【新】仅选择目录

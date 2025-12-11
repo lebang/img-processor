@@ -1,15 +1,18 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { createMenu } from './menu.js'
 import { registerIpcHandlers, setMainWindow } from './ipc/index.js'
+import { setupCSP } from './utils/csp.js'
 
 // 获取当前文件的目录路径
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// 禁用 Autofill 相关警告
+// 禁用 Autofill 相关警告和其他开发环境噪音
 app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication')
+// 禁用 DevTools 的自动填充功能
+app.commandLine.appendSwitch('disable-blink-features', 'AutofillAddressProfileEnabled,AutofillCreditCardEnabled')
 
 // 设置应用名称（macOS 菜单栏显示）
 // 注意：开发模式下 macOS 菜单栏左侧显示的是 Electron 可执行文件名，无法通过代码修改
@@ -37,8 +40,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: join(__dirname, 'preload.js'),
-      // 允许加载本地文件（用于图片预览）
-      webSecurity: false
+      // 启用 web 安全，通过 CSP 控制资源加载
+      webSecurity: true
     },
     titleBarStyle: 'default',
     show: false
@@ -61,6 +64,21 @@ function createWindow() {
     // 开发模式下打开开发者工具（独立窗口）
     if (isDev) {
       mainWindow.webContents.openDevTools()
+      
+      // 禁用 DevTools 中的 Autofill 功能，避免控制台警告
+      mainWindow.webContents.on('devtools-opened', () => {
+        mainWindow.webContents.devToolsWebContents?.executeJavaScript(`
+          // 抑制 Autofill 相关的协议错误
+          const originalError = console.error;
+          console.error = (...args) => {
+            const msg = args.join(' ');
+            if (msg.includes('Autofill.enable') || msg.includes('Autofill.setAddresses')) {
+              return; // 忽略 Autofill 相关错误
+            }
+            originalError.apply(console, args);
+          };
+        `)
+      })
     }
   })
 
@@ -71,7 +89,11 @@ function createWindow() {
 }
 
 // 应用初始化
+// app.enableSandbox()
 app.whenReady().then(() => {
+  // 设置 CSP（需要在创建窗口前设置）
+  setupCSP(isDev)
+  
   // 注册 IPC 处理程序（需要在创建窗口前注册）
   registerIpcHandlers()
   

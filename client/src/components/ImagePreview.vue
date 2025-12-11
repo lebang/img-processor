@@ -16,7 +16,11 @@
           <div class="delete-btn" @click.stop="deleteImage(index)">
             <el-icon><Delete /></el-icon>
           </div>
-          <img :src="element.thumbnail || ('file://' + element.path)" :alt="element.name" />
+          <div v-if="!element.thumbnail" class="thumbnail-placeholder">
+            <el-icon :size="32"><Picture /></el-icon>
+            <span>加载中...</span>
+          </div>
+          <img v-else :src="element.thumbnail" :alt="element.name" />
           <div class="image-name" :title="element.relativePath || element.name">
             {{ element.relativePath || element.name }}
           </div>
@@ -29,7 +33,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
-import { Rank, Delete } from '@element-plus/icons-vue'
+import { Rank, Delete, Picture } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps({
@@ -163,6 +167,22 @@ function deleteImage(index) {
 .image-item:hover .drag-handle,
 .image-item:hover .delete-btn {
   opacity: 1;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  color: #909399;
+  gap: 8px;
+}
+
+.thumbnail-placeholder span {
+  font-size: 12px;
 }
 
 .image-item img {
