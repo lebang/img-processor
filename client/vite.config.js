@@ -62,15 +62,65 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log'], // 移除 console.log
+      },
+      format: {
+        comments: true // 删除注释
       }
     },
+    // 分包策略优化
     rollupOptions: {
       output: {
-        manualChunks: {
-          'element-plus': ['element-plus']
+        // 静态资源分类打包
+        chunkFileNames: 'js/[name]-[hash].js',
+        entryFileNames: 'js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          // 图片文件
+          if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
+            return 'images/[name]-[hash][extname]'
+          }
+          // 字体文件
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+            return 'fonts/[name]-[hash][extname]'
+          }
+          // CSS 文件
+          if (/\.css$/i.test(assetInfo.name)) {
+            return 'css/[name]-[hash][extname]'
+          }
+          // 其他资源
+          return 'assets/[name]-[hash][extname]'
+        },
+        // 分包策略
+        manualChunks: (id) => {
+          // node_modules 中的依赖
+          if (id.includes('node_modules')) {
+            // Element Plus 单独打包
+            if (id.includes('element-plus')) {
+              return 'element-plus'
+            }
+            // Element Plus 图标单独打包
+            if (id.includes('@element-plus/icons-vue')) {
+              return 'element-icons'
+            }
+            // Vue 相关库打包在一起
+            if (id.includes('vue') || id.includes('@vue')) {
+              return 'vue-vendor'
+            }
+            // 其他第三方库
+            return 'vendor'
+          }
         }
       }
+    },
+    // 代码分割优化
+    chunkSizeWarningLimit: 1000, // 提高警告阈值到 1000KB
+    // 压缩配置
+    cssCodeSplit: true, // CSS 代码分割
+    sourcemap: false, // 生产环境不生成 sourcemap
+    // 优化依赖预构建
+    commonjsOptions: {
+      transformMixedEsModules: true
     }
   }
 })
