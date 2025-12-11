@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
-import electron from '@/api/electronBridge'
+import electron from '@/bridge/electronBridge'
 
 export function usePdfGenerator() {
   const isGenerating = ref(false)

@@ -4,7 +4,7 @@
  */
 import { onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import electron from '@/api/electronBridge'
+import electron from '@/bridge/electronBridge'
 
 export function useMenuEvents({ onOpenFolder, onExportPdf, getImages }) {
   // 设置菜单事件监听
