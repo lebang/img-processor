@@ -8,10 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "vite",
-    "electron:build": "vite build && electron-builder",
-    "electron:build:mac": "vite build && electron-builder --mac",
-    "electron:build:win": "vite build && electron-builder --win",
-    "electron:build:linux": "vite build && electron-builder --linux"
+    "electron:build:mac-arm64": "vite build && electron-builder --mac --arm64",
+    "electron:build:mac-x64": "vite build && electron-builder --mac --x64",
+    "electron:build:win-x64": "vite build && electron-builder --win --x64",
+    "electron:build:linux-x64": "vite build && electron-builder --linux --x64"
   },
   "build": {
     "appId": "com.imgprocessor.client",
@@ -26,11 +26,10 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/sharp/**/*",
-      "node_modules/@img/sharp-darwin-${arch}/**/*",
-      "node_modules/@img/sharp-libvips-darwin-${arch}/**/*"
+      "**/node_modules/@img/**"
     ],
     "compression": "maximum",
+    "afterPack": "scripts/afterPack.js",
     "npmRebuild": true,
     "nodeGypRebuild": false,
     "mac": {
@@ -44,15 +43,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "files": [
-        "!node_modules/@img/sharp-win32*",
-        "!node_modules/@img/sharp-linux*",
-        "!node_modules/@img/sharp-linuxmusl*",
-        "!node_modules/@img/sharp-wasm32*",
-        "!node_modules/@img/sharp-libvips-linux*",
-        "!node_modules/@img/sharp-libvips-linuxmusl*"
-      ]
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "dmg": {
       "writeUpdateInfo": false
@@ -65,15 +56,6 @@
             "x64"
           ]
         }
-      ],
-      "files": [
-        "!node_modules/@img/sharp-darwin*",
-        "!node_modules/@img/sharp-linux*",
-        "!node_modules/@img/sharp-linuxmusl*",
-        "!node_modules/@img/sharp-wasm32*",
-        "!node_modules/@img/sharp-libvips-darwin*",
-        "!node_modules/@img/sharp-libvips-linux*",
-        "!node_modules/@img/sharp-libvips-linuxmusl*"
       ]
     },
     "nsis": {
@@ -88,12 +70,6 @@
             "x64"
           ]
         }
-      ],
-      "files": [
-        "!node_modules/@img/sharp-darwin*",
-        "!node_modules/@img/sharp-win32*",
-        "!node_modules/@img/sharp-wasm32*",
-        "!node_modules/@img/sharp-libvips-darwin*"
       ]
     }
   },
