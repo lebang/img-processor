@@ -47,13 +47,6 @@
             </div>
           </div>
           
-          <el-alert
-            v-if="!isElectronReady"
-            title="请在桌面应用中使用此功能"
-            type="warning"
-            :closable="false"
-            show-icon
-          />
         </div>
         <div class="card-preview-area">
           <el-card> 
@@ -91,7 +84,9 @@ import { usePdfGenerator } from '@/hooks/usePdfGenerator'
 import { useMenuEvents } from '@/hooks/useMenuEvents'
 
 // 使用 Hooks
-const { isElectronReady, platform } = useElectron()
+const { isElectronReady, platform, process } = useElectron()
+
+// console.log('process: 89', JSON.parse(process.value))
 
 const { 
   selectedFolder, 

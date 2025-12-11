@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 平台信息
   platform: process.platform,
+  process: JSON.stringify(process),
+
   
   // 【新】仅选择目录
   selectFolder: () => ipcRenderer.invoke('select-folder'),

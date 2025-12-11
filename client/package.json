@@ -22,12 +22,13 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "electron/fonts/**/*",
-      "node_modules/sharp/**/*"
+      "electron/fonts/**/*"
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/sharp/**/*"
+      "node_modules/sharp/**/*",
+      "node_modules/@img/sharp-darwin-${arch}/**/*",
+      "node_modules/@img/sharp-libvips-darwin-${arch}/**/*"
     ],
     "compression": "maximum",
     "npmRebuild": true,
@@ -38,11 +39,20 @@
         {
           "target": "dmg",
           "arch": [
-            "x64"
+            "x64",
+            "arm64"
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "files": [
+        "!node_modules/@img/sharp-win32*",
+        "!node_modules/@img/sharp-linux*",
+        "!node_modules/@img/sharp-linuxmusl*",
+        "!node_modules/@img/sharp-wasm32*",
+        "!node_modules/@img/sharp-libvips-linux*",
+        "!node_modules/@img/sharp-libvips-linuxmusl*"
+      ]
     },
     "dmg": {
       "writeUpdateInfo": false
@@ -55,6 +65,15 @@
             "x64"
           ]
         }
+      ],
+      "files": [
+        "!node_modules/@img/sharp-darwin*",
+        "!node_modules/@img/sharp-linux*",
+        "!node_modules/@img/sharp-linuxmusl*",
+        "!node_modules/@img/sharp-wasm32*",
+        "!node_modules/@img/sharp-libvips-darwin*",
+        "!node_modules/@img/sharp-libvips-linux*",
+        "!node_modules/@img/sharp-libvips-linuxmusl*"
       ]
     },
     "nsis": {
@@ -69,6 +88,12 @@
             "x64"
           ]
         }
+      ],
+      "files": [
+        "!node_modules/@img/sharp-darwin*",
+        "!node_modules/@img/sharp-win32*",
+        "!node_modules/@img/sharp-wasm32*",
+        "!node_modules/@img/sharp-libvips-darwin*"
       ]
     }
   },
@@ -81,24 +106,24 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@element-plus/icons-vue": "^2.3.1",
-    "element-plus": "^2.9.5",
     "pdfkit": "^0.17.2",
     "sharp": "^0.34.5",
-    "vue": "^3.5.13",
-    "vuedraggable": "^4.1.0",
     "woff2-encoder": "^2.0.0"
   },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
+    "element-plus": "^2.9.5",
     "terser": "^5.36.0",
     "unplugin-auto-import": "^0.18.6",
     "unplugin-vue-components": "^0.27.5",
     "vite": "^6.0.3",
     "vite-plugin-electron": "^0.28.8",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vue": "^3.5.13",
+    "vuedraggable": "^4.1.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

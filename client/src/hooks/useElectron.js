@@ -2,25 +2,16 @@
  * Electron 状态管理 Hook
  * 管理 Electron 连接状态和平台信息
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import electron from '@/api/electronBridge'
 
 export function useElectron() {
-  const isElectronReady = ref(false)
-  const platform = ref('')
-
-  // 检查 Electron 是否可用
-  function checkElectron() {
-    if (electron.isAvailable()) {
-      isElectronReady.value = true
-      platform.value = electron.platform
-    }
-  }
-
-  // 生命周期
-  onMounted(() => {
-    checkElectron()
-  })
+  // 立即检查 Electron 是否可用（不等待 onMounted）
+  const electronAvailable = electron.isAvailable()
+  
+  const isElectronReady = ref(electronAvailable)
+  const platform = ref(electronAvailable ? electron.platform : '')
+  const process = ref(electronAvailable ? electron.process : '')
 
   onUnmounted(() => {
     electron.removePdfProgressListener()
@@ -29,6 +20,7 @@ export function useElectron() {
 
   return {
     isElectronReady,
-    platform
+    platform,
+    process
   }
 }

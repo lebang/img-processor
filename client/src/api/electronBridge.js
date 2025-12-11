@@ -16,6 +16,7 @@ const safe = (fn) => (...args) => {
 export default {
   isAvailable: () => !!window.electronAPI,
   platform: bridge.platform || '',
+  process: bridge.process || '',
 
   // 【新】分步加载 - 选择目录
   selectFolder: safe(bridge.selectFolder),
