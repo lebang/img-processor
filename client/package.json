@@ -31,7 +31,7 @@
       "!**/LICENSE*",
       "!**/LICENCE*"
     ],
-    "asar": true,
+    "asar": false,
     "asarUnpack": [
       "**/node_modules/@img/**"
     ],
