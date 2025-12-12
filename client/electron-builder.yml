@@ -1,0 +1,76 @@
+# electron-builder 配置文件
+# 文档: https://www.electron.build/configuration/configuration
+
+# 应用基础信息
+appId: com.imgprocessor.client
+productName: IMG Processor
+
+# 输出目录
+directories:
+  output: release
+
+# 打包文件
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - electron/fonts/**/*
+  # 排除文件
+  - "!**/*.md"
+  - "!**/node_modules/**/{test,tests,examples}"
+  - "!**/node_modules/**/*.map"
+  - "!**/node_modules/**/*.js.map"
+  - "!**/node_modules/**/*.css.map"
+  - "!**/LICENSE*"
+  - "!**/LICENCE*"
+
+# 不使用 asar 打包
+asar: true
+asarUnpack:
+  - "**/node_modules/@img/**"
+
+# 压缩级别
+compression: maximum
+
+# 打包后脚本
+afterPack: scripts/afterPack.js
+
+# npm 配置
+npmRebuild: true
+nodeGypRebuild: false
+
+# 禁用 blockmap 生成（加快构建速度）
+generateUpdatesFilesForAllChannels: false
+
+# macOS 配置
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+# DMG 配置
+dmg:
+  writeUpdateInfo: false
+
+# Windows 配置
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+# NSIS 安装程序配置
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  differentialPackage: false
+
+# Linux 配置
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
