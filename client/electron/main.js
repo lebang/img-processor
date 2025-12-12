@@ -66,19 +66,19 @@ function createWindow() {
       mainWindow.webContents.openDevTools()
       
       // 禁用 DevTools 中的 Autofill 功能，避免控制台警告
-      mainWindow.webContents.on('devtools-opened', () => {
-        mainWindow.webContents.devToolsWebContents?.executeJavaScript(`
-          // 抑制 Autofill 相关的协议错误
-          const originalError = console.error;
-          console.error = (...args) => {
-            const msg = args.join(' ');
-            if (msg.includes('Autofill.enable') || msg.includes('Autofill.setAddresses')) {
-              return; // 忽略 Autofill 相关错误
-            }
-            originalError.apply(console, args);
-          };
-        `)
-      })
+      // mainWindow.webContents.on('devtools-opened', () => {
+      //   mainWindow.webContents.devToolsWebContents?.executeJavaScript(`
+      //     // 抑制 Autofill 相关的协议错误
+      //     const originalError = console.error;
+      //     console.error = (...args) => {
+      //       const msg = args.join(' ');
+      //       if (msg.includes('Autofill.enable') || msg.includes('Autofill.setAddresses')) {
+      //         return; // 忽略 Autofill 相关错误
+      //       }
+      //       originalError.apply(console, args);
+      //     };
+      //   `)
+      // })
     }
   })
 
@@ -96,7 +96,7 @@ app.whenReady().then(() => {
   
   // 注册 IPC 处理程序（需要在创建窗口前注册）
   registerIpcHandlers()
-  
+  console.log('IPC handlers registered')
   createWindow()
   createMenu(mainWindow)
 

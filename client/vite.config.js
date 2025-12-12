@@ -6,6 +6,7 @@ import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import { spawn } from 'child_process'
 
 export default defineConfig({
   plugins: [
@@ -22,7 +23,29 @@ export default defineConfig({
         // 主进程入口
         entry: 'electron/main.js',
         onstart(options) {
-          options.startup()
+          // 检查是否启用调试模式
+          const isDebug = process.env.ELECTRON_DEBUG === 'true'
+          const isDebugBrk = process.env.ELECTRON_DEBUG_BRK === 'true'
+          
+          if (isDebug || isDebugBrk) {
+            // 使用 spawn 自定义启动 Electron，确保 inspect 参数生效
+            const electronPath = require('electron')
+            const inspectArg = isDebugBrk ? '--inspect-brk=9229' : '--inspect=9229'
+            
+            console.log(`\n🔍 启动 Electron 调试模式: ${inspectArg}`)
+            console.log('📍 在 Chrome 中打开 chrome://inspect 连接调试器\n')
+            
+            const ps = spawn(electronPath, [inspectArg, '.'], {
+              stdio: 'inherit',
+              env: process.env
+            })
+            
+            ps.on('close', () => {
+              process.exit()
+            })
+          } else {
+            options.startup()
+          }
         },
         vite: {
           build: {

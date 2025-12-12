@@ -22,6 +22,13 @@ export function getMainWindow() {
 }
 
 /**
+ * 向渲染进程发送消息
+ */
+function send(channel, data) {
+  mainWindowRef?.webContents.send(channel, data)
+}
+
+/**
  * 注册所有 IPC 处理程序
  */
 export function registerIpcHandlers() {
@@ -58,7 +65,7 @@ export function registerIpcHandlers() {
       }
 
       // 立即返回图片列表（无缩略图），让前端先显示
-      mainWindowRef?.webContents.send('images-scanned', {
+      send('images-scanned', {
         images,
         total: images.length
       })
@@ -68,14 +75,14 @@ export function registerIpcHandlers() {
         images,
         // 每批完成回调
         (batchImages, progress) => {
-          mainWindowRef?.webContents.send('thumbnails-batch', {
+          send('thumbnails-batch', {
             images: batchImages,
             progress
           })
         },
         // 全部完成回调
         () => {
-          mainWindowRef?.webContents.send('thumbnails-complete')
+          send('thumbnails-complete', {})
         }
       )
 
@@ -86,7 +93,6 @@ export function registerIpcHandlers() {
     }
   })
 
-  // 【新】仅选择目录（不扫描图片）
   // 显示保存 PDF 对话框
   ipcMain.handle('show-save-pdf-dialog', async () => {
     try {
@@ -112,7 +118,7 @@ export function registerIpcHandlers() {
     try {
       // 进度回调
       const onProgress = (progress) => {
-        mainWindowRef?.webContents.send('pdf-progress', progress)
+        send('pdf-progress', progress)
       }
 
       // 调用 PDF 生成服务

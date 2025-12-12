@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "vite",
+    "electron:debug": "cross-env ELECTRON_DEBUG=true vite",
+    "electron:debug:brk": "cross-env ELECTRON_DEBUG_BRK=true vite",
     "electron:build:mac-arm64": "vite build && electron-builder --mac --arm64",
     "electron:build:mac-x64": "vite build && electron-builder --mac --x64",
     "electron:build:win-x64": "vite build && electron-builder --win --x64",
@@ -29,6 +31,7 @@
   "devDependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "@vitejs/plugin-vue": "^5.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.2.6",
     "electron-builder": "^26.0.12",
     "element-plus": "^2.9.5",
