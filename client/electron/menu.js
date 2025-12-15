@@ -1,4 +1,5 @@
 import { app, Menu, shell } from 'electron'
+import * as channels from './ipc/channels.js'
 
 /**
  * 创建应用菜单
@@ -34,7 +35,7 @@ export function createMenu(mainWindow) {
           label: '打开文件夹...',
           accelerator: 'CmdOrCtrl+O',
           click: () => {
-            mainWindow?.webContents.send('menu-open-folder')
+            mainWindow?.webContents.send(channels.MENU_OPEN_FOLDER)
           }
         },
         { type: 'separator' },
@@ -42,7 +43,7 @@ export function createMenu(mainWindow) {
           label: '导出 PDF...',
           accelerator: 'CmdOrCtrl+E',
           click: () => {
-            mainWindow?.webContents.send('menu-export-pdf')
+            mainWindow?.webContents.send(channels.MENU_EXPORT_PDF)
           }
         },
         { type: 'separator' },
