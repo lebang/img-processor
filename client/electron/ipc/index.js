@@ -1,6 +1,7 @@
 import { ipcMain, dialog, shell } from 'electron'
 import { scanImagesFromFolder, loadThumbnailsInBatches, loadImagesFromFolder } from '../services/imageService.js'
 import { generatePdf } from '../services/pdfService.js'
+import { checkTrial, getTrialDays } from '../license/index.js'
 
 // 存储主窗口引用
 let mainWindowRef = null
@@ -35,6 +36,15 @@ export function registerIpcHandlers() {
   // 测试通信
   ipcMain.handle('ping', async () => {
     return 'pong'
+  })
+
+  // 获取试用状态
+  ipcMain.handle('get-trial-status', async () => {
+    const status = checkTrial()
+    return {
+      ...status,
+      totalDays: getTrialDays()
+    }
   })
 
   // 【新】仅选择目录（不扫描图片）

@@ -46,5 +46,8 @@ export default {
   // 菜单事件监听
   onMenuOpenFolder: safe(bridge.onMenuOpenFolder),
   onMenuExportPdf: safe(bridge.onMenuExportPdf),
-  removeMenuListeners: safe(bridge.removeMenuListeners)
+  removeMenuListeners: safe(bridge.removeMenuListeners),
+
+  // 试用状态
+  getTrialStatus: safe(bridge.getTrialStatus)
 }

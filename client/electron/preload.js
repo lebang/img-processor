@@ -99,6 +99,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  // -------- 试用状态 --------
+  
+  // 获取试用状态
+  getTrialStatus: () => debugInvoke('get-trial-status'),
+
   // -------- 文件夹选择 --------
   
   // 选择目录

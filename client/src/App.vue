@@ -6,6 +6,14 @@
           <h1>IMG Processor</h1>
         </div>
         <div class="status-bar">
+          <!-- 试用期剩余天数显示 -->
+          <el-tag 
+            v-if="isElectronReady && trialStatus.daysLeft > 0" 
+            :type="trialStatus.daysLeft <= 3 ? 'danger' : 'warning'" 
+            effect="plain"
+          >
+            试用剩余 {{ trialStatus.daysLeft }} 天
+          </el-tag>
           <el-tag :type="isElectronReady ? 'success' : 'warning'" effect="dark">
             {{ isElectronReady ? `Electron 已就绪 (${platform})` : 'Web 模式' }}
           </el-tag>
@@ -84,7 +92,7 @@ import { usePdfGenerator } from '@/hooks/usePdfGenerator'
 import { useMenuEvents } from '@/hooks/useMenuEvents'
 
 // 使用 Hooks
-const { isElectronReady, platform, process } = useElectron()
+const { isElectronReady, platform, process, trialStatus } = useElectron()
 
 console.log('process: 89', process.value)
 

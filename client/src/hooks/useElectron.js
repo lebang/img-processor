@@ -1,8 +1,8 @@
 /**
  * Electron 状态管理 Hook
- * 管理 Electron 连接状态和平台信息
+ * 管理 Electron 连接状态、平台信息和试用状态
  */
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import electron from '@/bridge/electronBridge'
 
 export function useElectron() {
@@ -12,6 +12,31 @@ export function useElectron() {
   const isElectronReady = ref(electronAvailable)
   const platform = ref(electronAvailable ? electron.platform : '')
   const process = ref(electronAvailable ? electron.process : '')
+  
+  // 试用状态
+  const trialStatus = ref({
+    valid: true,
+    daysLeft: 0,
+    totalDays: 7,
+    message: ''
+  })
+
+  // 获取试用状态
+  const fetchTrialStatus = async () => {
+    if (!electronAvailable) return
+    try {
+      const status = await electron.getTrialStatus()
+      if (status) {
+        trialStatus.value = status
+      }
+    } catch (error) {
+      console.error('获取试用状态失败:', error)
+    }
+  }
+
+  onMounted(() => {
+    fetchTrialStatus()
+  })
 
   onUnmounted(() => {
     electron.removePdfProgressListener()
@@ -21,6 +46,7 @@ export function useElectron() {
   return {
     isElectronReady,
     platform,
-    process
+    process,
+    trialStatus
   }
 }

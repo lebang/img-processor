@@ -52,7 +52,7 @@ export default defineConfig({
             outDir: 'dist-electron',
             rollupOptions: {
               // Node.js 原生模块需要作为外部依赖，避免被 Vite 打包
-              external: ['electron', 'pdfkit', 'sharp', 'woff2-encoder']
+              external: ['electron', 'pdfkit', 'sharp', 'woff2-encoder', 'native-machine-id']
             }
           }
         }

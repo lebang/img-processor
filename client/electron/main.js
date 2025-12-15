@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { createMenu } from './menu.js'
 import { registerIpcHandlers, setMainWindow } from './ipc/index.js'
 import { setupCSP } from './utils/csp.js'
+import { handleTrialCheck } from './license/index.js'
 
 // 获取当前文件的目录路径
 const __filename = fileURLToPath(import.meta.url)
@@ -91,6 +92,14 @@ function createWindow() {
 // 应用初始化
 // app.enableSandbox()
 app.whenReady().then(() => {
+  // 试用期检查（过期则弹窗并退出）
+  const trialStatus = handleTrialCheck({
+    purchaseUrl: 'https://your-purchase-url.com',
+    remindDays: 3
+  })
+  if (!trialStatus) return
+  
+  // ==================== 正常启动流程 ====================
   // 设置 CSP（需要在创建窗口前设置）
   setupCSP(isDev)
   
